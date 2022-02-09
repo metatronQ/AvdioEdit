@@ -1,0 +1,5 @@
+rootProject.name = "AvdioEdit"
+include ':app'
+include ':ndk_source'
+
+project(':ndk_source').projectDir = new File('../ndkCmake/ndk_source')
