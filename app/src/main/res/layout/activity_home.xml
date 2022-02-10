@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".HomeActivity">
+    tools:context=".view.HomeActivity">
 
     <LinearLayout
         android:id="@+id/toolbar_container"
@@ -26,11 +26,15 @@
         app:layout_constraintTop_toBottomOf="@id/toolbar_container"
         tools:background="#EBEBEB">
 
-        <Button
-            android:id="@+id/get_video_bt"
+        <TextView
+            android:id="@+id/get_video_tv"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="获取视频"/>
+            android:background="@color/black"
+            android:text="获取视频"
+            android:textColor="@color/white"
+            android:textSize="12sp"
+            android:textStyle="bold" />
 
     </LinearLayout>
 
@@ -51,20 +55,28 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:orientation="vertical"
-        app:layout_constraintVertical_weight="2"
         app:layout_constraintBottom_toTopOf="@id/multitrack_timeline_container"
         app:layout_constraintEnd_toStartOf="@id/features_container"
         app:layout_constraintStart_toEndOf="@id/operate_container"
         app:layout_constraintTop_toBottomOf="@id/toolbar_container"
+        app:layout_constraintVertical_weight="2"
         tools:background="#E57373">
 
-        <SurfaceView
-            android:id="@+id/surface_view"
+        <RelativeLayout
+            android:id="@+id/surface_container"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/video_controller"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintBottom_toTopOf="@id/video_controller"/>
+            app:layout_constraintTop_toTopOf="parent">
+
+            <SurfaceView
+                android:id="@+id/surface_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"/>
+
+        </RelativeLayout>
 
         <RelativeLayout
             android:id="@+id/video_controller"
@@ -74,27 +86,54 @@
             app:layout_constraintStart_toStartOf="parent"
             tools:background="@color/teal_200">
 
+            <TextView
+                android:id="@+id/current_position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toStartOf="@id/interval"
+                android:text="0000" />
+
+            <TextView
+                android:id="@+id/interval"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toStartOf="@id/duration_position"
+                android:text=" / " />
+
+            <TextView
+                android:id="@+id/duration_position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="10dp"
+                android:layout_toStartOf="@id/back_10_seconds"
+                android:text="0000" />
+
             <ImageButton
-                style="@style/ImageButtonBackground"
                 android:id="@+id/back_10_seconds"
+                style="@style/ImageButtonBackground"
+                android:layout_centerVertical="true"
                 android:layout_toStartOf="@id/play_or_pause"
-                android:src="@drawable/round_replay_10_black_20"
-                android:contentDescription="@string/back_10_seconds" />
+                android:contentDescription="@string/back_10_seconds"
+                android:src="@drawable/round_replay_10_black_20" />
 
             <ImageButton
-                style="@style/ImageButtonBackground"
                 android:id="@+id/play_or_pause"
-                android:layout_centerHorizontal="true"
+                style="@style/ImageButtonBackground"
+                android:layout_centerInParent="true"
                 android:layout_marginHorizontal="10dp"
-                android:src="@drawable/round_play_arrow_black_20"
-                android:contentDescription="@string/play_or_pause" />
+                android:contentDescription="@string/play_or_pause"
+                android:src="@drawable/round_play_arrow_black_20" />
 
             <ImageButton
-                style="@style/ImageButtonBackground"
                 android:id="@+id/forward_10_seconds"
+                style="@style/ImageButtonBackground"
+                android:layout_centerVertical="true"
                 android:layout_toEndOf="@id/play_or_pause"
-                android:src="@drawable/round_forward_10_black_20"
-                android:contentDescription="@string/forward_10_seconds"/>
+                android:contentDescription="@string/forward_10_seconds"
+                android:src="@drawable/round_forward_10_black_20" />
 
         </RelativeLayout>
 
@@ -102,13 +141,13 @@
 
     <FrameLayout
         android:id="@+id/multitrack_timeline_container"
-        app:layout_constraintVertical_weight="1"
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/features_container"
         app:layout_constraintStart_toEndOf="@id/operate_container"
         app:layout_constraintTop_toBottomOf="@id/preview_container"
+        app:layout_constraintVertical_weight="1"
         tools:background="#65B4F6">
 
     </FrameLayout>
