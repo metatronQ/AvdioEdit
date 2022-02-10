@@ -1,6 +1,6 @@
 package com.chenfu.avdioedit;
 
-import com.chenfu.avdioedit.base.MyBaseActivity;
+import com.chenfu.avdioedit.view.base.MyBaseActivity;
 import com.example.ndk_source.base.BaseApplication;
 
 import java.util.ArrayList;
