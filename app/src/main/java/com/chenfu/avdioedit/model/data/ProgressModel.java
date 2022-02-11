@@ -1,6 +1,6 @@
-package com.chenfu.avdioedit.model;
+package com.chenfu.avdioedit.model.data;
 
-import com.chenfu.avdioedit.model.base.BaseModel;
+import com.chenfu.avdioedit.base.BaseModel;
 
 public class ProgressModel extends BaseModel {
 

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:id="@+id/surface_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/video_controller"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <SurfaceView
+            android:id="@+id/surface_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true" />
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/video_controller"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:background="@color/teal_200">
+
+        <TextView
+            android:id="@+id/current_position"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_toStartOf="@id/interval"
+            android:text="0000" />
+
+        <TextView
+            android:id="@+id/interval"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_toStartOf="@id/duration_position"
+            android:text=" / " />
+
+        <TextView
+            android:id="@+id/duration_position"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="10dp"
+            android:layout_toStartOf="@id/back_10_seconds"
+            android:text="0000" />
+
+        <ImageButton
+            android:id="@+id/back_10_seconds"
+            style="@style/ImageButtonBackground"
+            android:layout_centerVertical="true"
+            android:layout_toStartOf="@id/play_or_pause"
+            android:contentDescription="@string/back_10_seconds"
+            android:src="@drawable/round_replay_10_black_20" />
+
+        <ImageButton
+            android:id="@+id/play_or_pause"
+            style="@style/ImageButtonBackground"
+            android:layout_centerInParent="true"
+            android:layout_marginHorizontal="10dp"
+            android:contentDescription="@string/play_or_pause"
+            android:src="@drawable/round_play_arrow_black_20" />
+
+        <ImageButton
+            android:id="@+id/forward_10_seconds"
+            style="@style/ImageButtonBackground"
+            android:layout_centerVertical="true"
+            android:layout_toEndOf="@id/play_or_pause"
+            android:contentDescription="@string/forward_10_seconds"
+            android:src="@drawable/round_forward_10_black_20" />
+
+    </RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

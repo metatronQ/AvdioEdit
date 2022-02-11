@@ -1,16 +1,18 @@
-package com.chenfu.avdioedit.impl;
+package com.chenfu.avdioedit.model.impl;
 
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.view.SurfaceHolder;
 
 import androidx.annotation.NonNull;
+import androidx.lifecycle.ViewModel;
 
+import com.chenfu.avdioedit.Interface.PlayerInterface;
 import com.chenfu.avdioedit.enums.VideoStatus;
-import com.chenfu.avdioedit.model.ProgressModel;
-import com.chenfu.avdioedit.model.VideoModel;
+import com.chenfu.avdioedit.model.data.ProgressModel;
+import com.chenfu.avdioedit.model.data.VideoModel;
 import com.chenfu.avdioedit.util.RxUtils;
-import com.chenfu.avdioedit.viewmodel.RouterViewModel;
+import com.chenfu.avdioedit.viewmodel.PlayerViewModel;
 import com.example.ndk_source.util.LogUtil;
 
 import java.io.IOException;
@@ -20,7 +22,13 @@ import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 
-public class PlayerImpl implements SurfaceHolder.Callback,
+/**
+ * 提供播放器数据的实现类，只能被VM持有
+ *
+ * @Model
+ */
+public class PlayerImpl implements PlayerInterface,
+        SurfaceHolder.Callback,
         MediaPlayer.OnPreparedListener,
         MediaPlayer.OnCompletionListener,
         MediaPlayer.OnErrorListener,
@@ -28,9 +36,8 @@ public class PlayerImpl implements SurfaceHolder.Callback,
         MediaPlayer.OnSeekCompleteListener,
         MediaPlayer.OnVideoSizeChangedListener {
 
-    private volatile static PlayerImpl player;
     private MediaPlayer mediaPlayer;
-    private RouterViewModel routerViewModel;
+    private PlayerViewModel playerViewModel;
     private ProgressModel progressModel = new ProgressModel();
     private VideoModel videoModel = new VideoModel();
 
@@ -39,20 +46,22 @@ public class PlayerImpl implements SurfaceHolder.Callback,
     private Disposable disposableTimer;
     private VideoStatus videoStatus;
 
-    private PlayerImpl() {
+    public PlayerImpl(PlayerViewModel playerViewModel) {
         initPlayer();
+        setViewModel(playerViewModel);
     }
 
-    public static PlayerImpl getInstance() {
-        if (player == null) {
-            synchronized (PlayerImpl.class) {
-                if (player == null) {
-                    player = new PlayerImpl();
-                }
-            }
-        }
-        return player;
-    }
+//    private volatile static PlayerImpl player;
+//    public static PlayerImpl getInstance() {
+//        if (player == null) {
+//            synchronized (PlayerImpl.class) {
+//                if (player == null) {
+//                    player = new PlayerImpl();
+//                }
+//            }
+//        }
+//        return player;
+//    }
 
     private void initPlayer() {
         if (mediaPlayer == null) {
@@ -63,34 +72,6 @@ public class PlayerImpl implements SurfaceHolder.Callback,
             mediaPlayer.setOnPreparedListener(this);
             mediaPlayer.setOnSeekCompleteListener(this);
             mediaPlayer.setOnVideoSizeChangedListener(this);
-        }
-    }
-
-    /**
-     * 需要在surfaceview创建之前调用
-     */
-    public void setViewModel(RouterViewModel routerViewModel) {
-        this.routerViewModel = routerViewModel;
-    }
-
-    public boolean isPlaying() {
-        return mediaPlayer != null && mediaPlayer.isPlaying();
-    }
-
-    public void play() {
-        if (mediaPlayer == null || videoStatus == VideoStatus.PREPARE) {
-            return;
-        }
-        if (mediaPlayer.isPlaying()) {
-            videoStatus = VideoStatus.PAUSE;
-            mediaPlayer.pause();
-        } else {
-            initTimer();
-            // 此处应该只有三种可能的状态：PrepareFinish、Pause、Stop
-            if (videoStatus.getType() >= VideoStatus.PREPARE_FINISH.getType()) {
-                videoStatus = VideoStatus.START;
-            }
-            mediaPlayer.start();
         }
     }
 
@@ -111,13 +92,92 @@ public class PlayerImpl implements SurfaceHolder.Callback,
                                         progressModel.position = mediaPlayer.getCurrentPosition();
                                         // setValue 必须在主线程调用，postValue可以在子线程调用
                                         // 都是发送给主线程
-                                        routerViewModel.showPosition.postValue(progressModel);
+                                        playerViewModel.showPosition.postValue(progressModel);
                                     }
                                 }
                             });
         }
     }
 
+    /**
+     * 需要在surfaceview创建之前调用
+     */
+    @Override
+    public void setViewModel(ViewModel viewModel) {
+        playerViewModel = (PlayerViewModel) viewModel;
+    }
+
+    /**
+     * play前必需的surface，有可能被外面调用，无surface只播放音频
+     *
+     * @param holder
+     */
+    @Override
+    public void setDisplay(SurfaceHolder holder) {
+        // 保证mediaPlayer被释放后再次设置surface有效
+        initPlayer();
+        mediaPlayer.setDisplay(holder);
+    }
+
+    /**
+     * 播放本地视频必需的文件路径
+     *
+     * @param filePath
+     */
+    @Override
+    public void setPath(String filePath) {
+        initPlayer();
+        try {
+            mediaPlayer.setDataSource(filePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 同步准备
+     */
+    @Override
+    public void prepare() {
+        try {
+            mediaPlayer.prepare();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 异步准备
+     */
+    @Override
+    public void prepareAsync() {
+        mediaPlayer.prepareAsync();
+    }
+
+    @Override
+    public boolean isPlaying() {
+        return mediaPlayer != null && mediaPlayer.isPlaying();
+    }
+
+    @Override
+    public void play() {
+        if (mediaPlayer == null || videoStatus == VideoStatus.PREPARE) {
+            return;
+        }
+        if (mediaPlayer.isPlaying()) {
+            videoStatus = VideoStatus.PAUSE;
+            mediaPlayer.pause();
+        } else {
+            initTimer();
+            // 此处应该只有三种可能的状态：PrepareFinish、Pause、Stop
+            if (videoStatus.getType() >= VideoStatus.PREPARE_FINISH.getType()) {
+                videoStatus = VideoStatus.START;
+            }
+            mediaPlayer.start();
+        }
+    }
+
+    @Override
     public void forward10() {
         if (mediaPlayer == null) {
             return;
@@ -126,6 +186,7 @@ public class PlayerImpl implements SurfaceHolder.Callback,
         seekTo(position + 10000);
     }
 
+    @Override
     public void backward10() {
         if (mediaPlayer == null) {
             return;
@@ -139,6 +200,7 @@ public class PlayerImpl implements SurfaceHolder.Callback,
         seekTo(position);
     }
 
+    @Override
     public void seekTo(int position) {
         if (mediaPlayer == null) {
             return;
@@ -148,51 +210,6 @@ public class PlayerImpl implements SurfaceHolder.Callback,
         } else {
             mediaPlayer.seekTo(position);
         }
-    }
-
-    /**
-     * 同步准备
-     */
-    public void prepare() {
-        try {
-            mediaPlayer.prepare();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * 异步准备
-     */
-    public void prepareAsync() {
-        mediaPlayer.prepareAsync();
-    }
-
-    /**
-     * play前必需的surface，有可能被外面调用，无surface只播放音频
-     *
-     * @param holder
-     */
-    public PlayerImpl setDisplay(SurfaceHolder holder) {
-        // 保证mediaPlayer被释放后再次设置surface有效
-        initPlayer();
-        mediaPlayer.setDisplay(holder);
-        return this;
-    }
-
-    /**
-     * 播放本地视频必需的文件路径
-     *
-     * @param filePath
-     */
-    public PlayerImpl setPath(String filePath) {
-        initPlayer();
-        try {
-            mediaPlayer.setDataSource(filePath);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return this;
     }
 
     /**
@@ -229,8 +246,8 @@ public class PlayerImpl implements SurfaceHolder.Callback,
         videoModel.vWidth = mediaPlayer.getVideoWidth();
         videoModel.vHeight = mediaPlayer.getVideoHeight();
 
-        routerViewModel.showPosition.setValue(progressModel);
-        routerViewModel.recalculationScreen.setValue(videoModel);
+        playerViewModel.showPosition.setValue(progressModel);
+        playerViewModel.recalculationScreen.setValue(videoModel);
 
         // 后面再回调就都不是首次了，因此这里直接设为false减少赋值代码
         progressModel.isFirst = false;
@@ -243,7 +260,7 @@ public class PlayerImpl implements SurfaceHolder.Callback,
         LogUtil.INSTANCE.d("播放结束");
         videoStatus = VideoStatus.STOP;
         RxUtils.dispose(disposableTimer);
-        routerViewModel.playOver.setValue(true);
+        playerViewModel.playOver.setValue(true);
     }
 
     @Override
@@ -261,7 +278,7 @@ public class PlayerImpl implements SurfaceHolder.Callback,
         // seek完成
         LogUtil.INSTANCE.v("seek完成");
         progressModel.position = mediaPlayer.getCurrentPosition();
-        routerViewModel.showPosition.setValue(progressModel);
+        playerViewModel.showPosition.setValue(progressModel);
     }
 
     @Override

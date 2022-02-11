@@ -6,7 +6,9 @@
         <entry key="app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.3145833333333333" />
         <entry key="app/src/main/res/drawable/round_forward_10_20.xml" value="0.3145833333333333" />
         <entry key="app/src/main/res/drawable/round_replay_10_20.xml" value="0.3145833333333333" />
-        <entry key="app/src/main/res/layout/activity_home.xml" value="0.1742234601549484" />
+        <entry key="app/src/main/res/layout/activity_home.xml" value="0.25" />
+        <entry key="app/src/main/res/layout/fragment_left_edit.xml" value="0.25" />
+        <entry key="app/src/main/res/layout/fragment_player.xml" value="0.18206521739130435" />
         <entry key="app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.3" />
       </map>
     </option>

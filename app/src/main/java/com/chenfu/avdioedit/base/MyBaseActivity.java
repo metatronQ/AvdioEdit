@@ -1,4 +1,4 @@
-package com.chenfu.avdioedit.view.base;
+package com.chenfu.avdioedit.base;
 
 import android.os.Bundle;
 
@@ -6,7 +6,6 @@ import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.chenfu.avdioedit.MyApplication;
-import com.chenfu.avdioedit.viewmodel.RouterViewModel;
 import com.example.ndk_source.base.BaseActivity;
 
 abstract public class MyBaseActivity extends BaseActivity {
