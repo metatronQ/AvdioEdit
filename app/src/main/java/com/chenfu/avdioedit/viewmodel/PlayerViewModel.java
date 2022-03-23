@@ -6,6 +6,7 @@ import com.chenfu.avdioedit.base.BaseViewModel;
 import com.chenfu.avdioedit.model.impl.PlayerImpl;
 import com.chenfu.avdioedit.model.data.ProgressModel;
 import com.chenfu.avdioedit.model.data.VideoModel;
+import com.chenfu.avdioedit.view.multitrack.model.MediaTrack;
 
 public class PlayerViewModel extends BaseViewModel<PlayerImpl> {
 
@@ -14,6 +15,9 @@ public class PlayerViewModel extends BaseViewModel<PlayerImpl> {
 
     // 准备完成并且重新计算屏幕
     public MutableLiveData<VideoModel> recalculationScreen = new MutableLiveData<>();
+
+    // 通知多轨更新轨道信息
+    public MutableLiveData<MediaTrack> notifyMultiTrack = new MutableLiveData<>();
 
     // 视频播放结束
     public MutableLiveData<Boolean> playOver = new MutableLiveData<>();

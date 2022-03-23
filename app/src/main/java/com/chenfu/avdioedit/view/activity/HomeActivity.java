@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -12,9 +11,9 @@ import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Observer;
 
 import com.chenfu.avdioedit.R;
-import com.chenfu.avdioedit.model.impl.PlayerImpl;
 import com.chenfu.avdioedit.base.MyBaseActivity;
 import com.chenfu.avdioedit.view.fragment.LeftEditFragment;
+import com.chenfu.avdioedit.view.fragment.MultiTrackFragment;
 import com.chenfu.avdioedit.view.fragment.PlayerFragment;
 import com.example.ndk_source.callback.Callback;
 
@@ -59,6 +58,11 @@ public class HomeActivity extends MyBaseActivity {
         getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.left_container, new LeftEditFragment())
+                .commitAllowingStateLoss();
+
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.multi_track_timeline_container, new MultiTrackFragment())
                 .commitAllowingStateLoss();
     }
 

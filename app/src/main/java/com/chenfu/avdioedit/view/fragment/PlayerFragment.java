@@ -13,6 +13,7 @@ import com.chenfu.avdioedit.R;
 import com.chenfu.avdioedit.base.BaseFragment;
 import com.chenfu.avdioedit.model.data.ProgressModel;
 import com.chenfu.avdioedit.model.data.VideoModel;
+import com.chenfu.avdioedit.view.multitrack.model.MediaTrack;
 import com.chenfu.avdioedit.viewmodel.PlayerViewModel;
 
 public class PlayerFragment extends BaseFragment {
@@ -30,9 +31,7 @@ public class PlayerFragment extends BaseFragment {
     private Observer<ProgressModel> progressModelObserver = new Observer<ProgressModel>() {
         @Override
         public void onChanged(ProgressModel progressModel) {
-            if (progressModel.isFirst) {
-                durationPositionTv.setText(String.valueOf(progressModel.duration));
-            }
+            durationPositionTv.setText(String.valueOf(progressModel.duration));
             curPositionTv.setText(String.valueOf(progressModel.position));
         }
     };
@@ -57,6 +56,13 @@ public class PlayerFragment extends BaseFragment {
         public void onChanged(String s) {
             playerViewModel.setPath(s);
             playerViewModel.prepareAsync();
+        }
+    };
+
+    private Observer<MediaTrack> mediaTrackObserver = new Observer<MediaTrack>() {
+        @Override
+        public void onChanged(MediaTrack mediaTrack) {
+            routerViewModel.deliverMediaTrack.setValue(mediaTrack);
         }
     };
 
@@ -138,6 +144,7 @@ public class PlayerFragment extends BaseFragment {
         playerViewModel.showPosition.observeForever(progressModelObserver);
         playerViewModel.recalculationScreen.observeForever(videoModelObserver);
         playerViewModel.playOver.observeForever(playOverObserver);
+        playerViewModel.notifyMultiTrack.observeForever(mediaTrackObserver);
     }
 
     @Override
@@ -148,5 +155,6 @@ public class PlayerFragment extends BaseFragment {
         playerViewModel.showPosition.removeObserver(progressModelObserver);
         playerViewModel.recalculationScreen.removeObserver(videoModelObserver);
         playerViewModel.playOver.removeObserver(playOverObserver);
+        playerViewModel.notifyMultiTrack.removeObserver(mediaTrackObserver);
     }
 }

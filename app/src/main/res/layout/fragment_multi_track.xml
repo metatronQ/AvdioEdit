@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent">
+
+<!--    <androidx.constraintlayout.widget.ConstraintLayout-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="match_parent">-->
+
+<!--        &lt;!&ndash;    刻度时间轴&ndash;&gt;-->
+<!--        <TextView-->
+<!--            android:id="@+id/time_line_tv"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="0dp"-->
+<!--            android:gravity="center"-->
+<!--            android:text="@string/time_line"-->
+<!--            app:layout_constraintVertical_weight="1"-->
+<!--            app:layout_constraintTop_toTopOf="parent"-->
+<!--            app:layout_constraintBottom_toTopOf="@id/multi_track_recycler"-->
+<!--            app:layout_constraintStart_toStartOf="parent"-->
+<!--            app:layout_constraintEnd_toEndOf="parent"/>-->
+
+<!--        &lt;!&ndash;    多轨时间轴-->
+<!--                得用自定义View，container，实现上下、左右滑动逻辑-->
+<!--                实现item可拖曳、选中、剪切&ndash;&gt;-->
+<!--        <androidx.recyclerview.widget.RecyclerView-->
+<!--            android:id="@+id/multi_track_recycler"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="0dp"-->
+<!--            app:layout_constraintVertical_weight="10"-->
+<!--            app:layout_constraintTop_toBottomOf="@id/time_line_tv"-->
+<!--            app:layout_constraintBottom_toBottomOf="parent"-->
+<!--            app:layout_constraintStart_toStartOf="parent"-->
+<!--            app:layout_constraintEnd_toEndOf="parent"/>-->
+
+<!--    </androidx.constraintlayout.widget.ConstraintLayout>-->
+
+<!--    &lt;!&ndash;    时间轴中心线-->
+<!--            剪切功能交给侧边栏&ndash;&gt;-->
+<!--    <View-->
+<!--        android:layout_width="1dp"-->
+<!--        android:layout_height="match_parent"-->
+<!--        android:layout_gravity="center"-->
+<!--        android:clickable="false"-->
+<!--        android:background="@color/red"/>-->
+    <com.chenfu.avdioedit.view.multitrack.TrackContainer
+        android:id="@+id/track_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+</FrameLayout>

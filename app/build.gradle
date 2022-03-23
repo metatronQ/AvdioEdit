@@ -2,6 +2,7 @@ plugins {
     id 'com.android.application'
 }
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
 
 android {
     compileSdk 31
@@ -33,6 +34,7 @@ dependencies {
     // rootProject为项目级的build.gradle
     implementation "io.reactivex.rxjava2:rxjava:$rootProject.ext.rxjavaVersion"
     implementation "io.reactivex.rxjava2:rxandroid:$rootProject.ext.rxandroidVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$rootProject.ext.kotlinxCoroutinesVersion"
 
     implementation 'androidx.appcompat:appcompat:1.4.1'
     implementation 'com.google.android.material:material:1.5.0'

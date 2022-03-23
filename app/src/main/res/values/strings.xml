@@ -1,8 +1,15 @@
 <resources>
     <string name="app_name">AvdioEdit</string>
+
+<!--    region play-->
     <string name="back_10_seconds">后退10s</string>
     <string name="forward_10_seconds">前进10s</string>
     <string name="play_or_pause">播放或暂停</string>
     <string name="play">播放</string>
     <string name="pause">暂停</string>
+<!--    endregion-->
+
+<!--    region 时间轴-->
+    <string name="time_line">时间轴</string>
+<!--    endregion-->
 </resources>

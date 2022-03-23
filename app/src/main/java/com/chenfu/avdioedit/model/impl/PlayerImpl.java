@@ -12,6 +12,8 @@ import com.chenfu.avdioedit.enums.VideoStatus;
 import com.chenfu.avdioedit.model.data.ProgressModel;
 import com.chenfu.avdioedit.model.data.VideoModel;
 import com.chenfu.avdioedit.util.RxUtils;
+import com.chenfu.avdioedit.view.multitrack.model.MediaTrack;
+import com.chenfu.avdioedit.view.multitrack.model.MediaType;
 import com.chenfu.avdioedit.viewmodel.PlayerViewModel;
 import com.example.ndk_source.util.LogUtil;
 
@@ -40,6 +42,7 @@ public class PlayerImpl implements PlayerInterface,
     private PlayerViewModel playerViewModel;
     private ProgressModel progressModel = new ProgressModel();
     private VideoModel videoModel = new VideoModel();
+    private String url = "";
 
     // 使用interval方式设置计时器，默认在计算调度线程Schedulers.computation()上运行
     // 也可以使用Handler的方式设置计时器，通过handler.removeMessages(UPDATE_TIME)停止事件循环
@@ -128,9 +131,11 @@ public class PlayerImpl implements PlayerInterface,
     public void setPath(String filePath) {
         initPlayer();
         try {
-            mediaPlayer.setDataSource(filePath);
+            url = filePath;
+            mediaPlayer.setDataSource(url);
         } catch (IOException e) {
             e.printStackTrace();
+            url = "";
         }
     }
 
@@ -241,16 +246,19 @@ public class PlayerImpl implements PlayerInterface,
     public void onPrepared(MediaPlayer mp) {
         progressModel.duration = mediaPlayer.getDuration();
         progressModel.position = mediaPlayer.getCurrentPosition();
-        progressModel.isFirst = true;
 
         videoModel.vWidth = mediaPlayer.getVideoWidth();
         videoModel.vHeight = mediaPlayer.getVideoHeight();
 
+        MediaTrack mediaTrack = new MediaTrack();
+        mediaTrack.setId(0);
+        mediaTrack.setType(MediaType.TYPE_UNKNOWN);
+        mediaTrack.setDuration(mediaPlayer.getDuration());
+        mediaTrack.setPath(url);
+
         playerViewModel.showPosition.setValue(progressModel);
         playerViewModel.recalculationScreen.setValue(videoModel);
-
-        // 后面再回调就都不是首次了，因此这里直接设为false减少赋值代码
-        progressModel.isFirst = false;
+        playerViewModel.notifyMultiTrack.setValue(mediaTrack);
 
         videoStatus = VideoStatus.PREPARE_FINISH;
     }
