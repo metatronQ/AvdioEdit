@@ -6,7 +6,7 @@ import com.chenfu.avdioedit.base.BaseViewModel;
 import com.chenfu.avdioedit.model.impl.PlayerImpl;
 import com.chenfu.avdioedit.model.data.ProgressModel;
 import com.chenfu.avdioedit.model.data.VideoModel;
-import com.chenfu.avdioedit.view.multitrack.model.MediaTrack;
+import com.chenfu.avdioedit.model.data.MediaTrack;
 
 public class PlayerViewModel extends BaseViewModel<PlayerImpl> {
 

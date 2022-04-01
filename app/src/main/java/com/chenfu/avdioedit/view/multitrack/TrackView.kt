@@ -7,27 +7,30 @@ import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
 import android.util.AttributeSet
 import android.util.TypedValue
-import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.annotation.AttrRes
-import com.chenfu.avdioedit.base.BaseView
-import com.chenfu.avdioedit.view.multitrack.model.MediaType
-import com.chenfu.avdioedit.view.multitrack.model.MediaTrack
+import com.chenfu.avdioedit.util.DisplayUtils
+import com.chenfu.avdioedit.model.data.MediaTrack
+import com.chenfu.avdioedit.model.data.MediaType
 import com.chenfu.avdioedit.view.multitrack.widget.ScaleRational
-import java.io.File
-import java.util.*
+import com.chenfu.avdioedit.viewmodel.MultiTrackViewModel
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import java.io.File
+import java.util.*
 
 class TrackView : ViewGroup, BaseView {
     private lateinit var mTimeView: TimelineView
     private val scale = ScaleRational(1, 1)
     private val tMap = TreeMap<Int, MediaTrack>()
-    private val vMap = TreeMap<Int, TextView>()
+    private val vMap = TreeMap<Int, SegmentContainer>()
     private var originWidth = 0
     private var mVideoColor = Color.DKGRAY
     private var mAudioColor = Color.BLACK
+    private lateinit var multiViewModel: MultiTrackViewModel
+
+    // 视频轨最大长度
+    public var maxDuration = 0L
 
     constructor(context: Context) : super(context) {
         onResolveAttribute(context, null, 0, 0)
@@ -65,6 +68,10 @@ class TrackView : ViewGroup, BaseView {
         addView(mTimeView, makeLayoutParams())
     }
 
+    override fun setViewModel(multiTrackViewModel: MultiTrackViewModel) {
+        this.multiViewModel = multiTrackViewModel
+    }
+
     override fun setPadding(left: Int, top: Int, right: Int, bottom: Int) {
         super.setPadding(left, top, right, bottom)
         mTimeView.setPadding(left, mTimeView.paddingTop, right, mTimeView.paddingBottom)
@@ -84,44 +91,42 @@ class TrackView : ViewGroup, BaseView {
         )
     }
 
-    fun setDuration(us: Long) {
-        mTimeView.setDuration(us)
+    fun setDuration(us: Long, frames: Int) {
+        mTimeView.setDuration(us, frames)
     }
+
+    fun getTrackMap() = tMap
 
     fun addTrack(track: MediaTrack) {
         if (tMap.containsKey(track.id)) {
             return
         }
+        // FIXME 需要重新计算maxDuration
+        maxDuration = track.duration
+        mTimeView.setDuration(maxDuration, track.frames)
+
         tMap[track.id] = track
-        vMap[track.id] = TextView(context)
-        vMap[track.id]?.textSize = 14f
-        vMap[track.id]?.setTextColor(Color.WHITE)
-        vMap[track.id]?.text = when (track.type) {
-            MediaType.TYPE_VIDEO -> "Track ${track.id}"
-            MediaType.TYPE_AUDIO -> "Track ${track.id}"
-            else -> "Unknown Track"
-        }
-        vMap[track.id]?.setBackgroundColor(
-            when (track.type) {
-                MediaType.TYPE_VIDEO -> mVideoColor
-                MediaType.TYPE_AUDIO -> mAudioColor
-                else -> Color.RED
-            }
-        )
-        val padding = applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8f).toInt()
-        vMap[track.id]?.setPadding(padding, padding, padding, padding)
+        vMap[track.id] = SegmentContainer(context, track)
+        vMap[track.id]!!.setViewModel(multiViewModel)
+//        val padding = applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8f).toInt()
+//        vMap[track.id]?.setPadding(padding, padding, padding, padding)
         addView(vMap[track.id], makeLayoutParams())
         requestLayout()
-        updateAudioTrack(track)
+//        updateAudioTrack(track)
     }
 
     fun updateTrack(track: MediaTrack) {
         if (!tMap.containsKey(track.id)) {
             return
         }
+        // FIXME 需要重新计算maxDuration
+        maxDuration = track.duration
+        mTimeView.setDuration(maxDuration, track.frames)
+
         tMap[track.id] = track
+        vMap[track.id]?.updateAllSegment(track)
         requestLayout()
-        updateAudioTrack(track)
+//        updateAudioTrack(track)
     }
 
     fun setScale(scale: ScaleRational) {
@@ -150,10 +155,10 @@ class TrackView : ViewGroup, BaseView {
         }
     }
 
-    private fun makeLayoutParams(): ViewGroup.LayoutParams {
-        return ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
+    private fun makeLayoutParams(): LayoutParams {
+        return LayoutParams(
+            LayoutParams.MATCH_PARENT,
+            LayoutParams.WRAP_CONTENT
         )
     }
 
@@ -171,7 +176,7 @@ class TrackView : ViewGroup, BaseView {
 
         var w = measuredWidth
         var h = mTimeView.measuredHeight
-        mTimeView.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), h)
+        mTimeView.measure(MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY), h)
         mTimeView.layout(l, height, l + w, height + h)
         height += h
 
@@ -180,15 +185,17 @@ class TrackView : ViewGroup, BaseView {
             val view = it.value
 
             w = measuredWidth - paddingLeft - paddingRight
-            h = view.measuredHeight
-            var offset = 0
-            if (null != track && mTimeView.getDuration() > 0 && track.duration > 0) {
-                offset = (track.seqIn * w / mTimeView.getDuration()).toInt()
-                w = (track.duration * w / mTimeView.getDuration()).toInt()
-            }
-            view.layout(paddingLeft + l + offset, height, paddingLeft + l + w + offset, height + h)
-            view.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), h)
+            h = DisplayUtils.dip2px(context, 50f)
+//            var offset = 0
+//            if (null != track && mTimeView.getDuration() > 0 && track.duration > 0) {
+//                offset = (track.seqIn * w / mTimeView.getDuration()).toInt()
+//                w = (track.duration * w / mTimeView.getDuration()).toInt()
+//            }
+//            view.layout(paddingLeft + l, height, paddingLeft + l + w, height + h)
+//            view.measure(MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY), h)
 
+            view.measure(MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY), h)
+            view.layout(paddingLeft + l, height, paddingLeft + l + w, height + h)
             height += h
         }
     }

@@ -15,7 +15,6 @@ import com.chenfu.avdioedit.base.MyBaseActivity;
 import com.chenfu.avdioedit.view.fragment.LeftEditFragment;
 import com.chenfu.avdioedit.view.fragment.MultiTrackFragment;
 import com.chenfu.avdioedit.view.fragment.PlayerFragment;
-import com.example.ndk_source.callback.Callback;
 
 public class HomeActivity extends MyBaseActivity {
 
@@ -23,22 +22,14 @@ public class HomeActivity extends MyBaseActivity {
     private static String[] PERMISSON_STORAGE = {Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE};
 
-    private Observer<Boolean> startSafWithRequestPermissions = new Observer<Boolean>() {
-        @Override
-        public void onChanged(Boolean aBoolean) {
-            // 请求权限
-            if (ContextCompat.checkSelfPermission(getActivity(), PERMISSON_STORAGE[0]) != PackageManager.PERMISSION_GRANTED
-                    || ContextCompat.checkSelfPermission(getActivity(), PERMISSON_STORAGE[1]) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(getActivity(), PERMISSON_STORAGE, REQUEST_EXTERNAL_STORAGE);
-                return;
-            }
-            launch(new Callback() {
-                @Override
-                public void setFilePath(String path) {
-                    setPath(path);
-                }
-            });
+    private Observer<Boolean> startSafWithRequestPermissions = aBoolean -> {
+        // 请求权限
+        if (ContextCompat.checkSelfPermission(getActivity(), PERMISSON_STORAGE[0]) != PackageManager.PERMISSION_GRANTED
+                || ContextCompat.checkSelfPermission(getActivity(), PERMISSON_STORAGE[1]) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(getActivity(), PERMISSON_STORAGE, REQUEST_EXTERNAL_STORAGE);
+            return;
         }
+        launch(path -> setPath(path));
     };
 
     @Override

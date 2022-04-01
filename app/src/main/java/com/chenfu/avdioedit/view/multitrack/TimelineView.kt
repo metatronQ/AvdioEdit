@@ -7,7 +7,8 @@ import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.View
 import androidx.annotation.AttrRes
-import com.chenfu.avdioedit.base.BaseView
+import com.chenfu.avdioedit.model.data.FramesType
+import com.chenfu.avdioedit.viewmodel.MultiTrackViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
@@ -15,7 +16,7 @@ import kotlin.math.abs
 
 class TimelineView : View, BaseView {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val fmt = SimpleDateFormat("mm:ss")
+    private val fmt = SimpleDateFormat("mm:ss:SSS")
     private var durationInUS = 0L
     private val textSize = Point()
     private val cursorRect = Rect()
@@ -23,6 +24,7 @@ class TimelineView : View, BaseView {
     private var spaceSize = 0f
     private val textVec = ArrayList<String>()
     private var mLastVisibleWidth = 0
+    private var mFrames = FramesType.FRAMES_UNKNOWN
 
     constructor(context: Context) : super(context) {
         onResolveAttribute(context, null, 0, 0)
@@ -55,13 +57,17 @@ class TimelineView : View, BaseView {
         paint.color = Color.GRAY
         paint.textSize = applyDimension(TypedValue.COMPLEX_UNIT_SP, 10f)
         val bounds = Rect()
-        paint.getTextBounds("00:00", 0, 5, bounds)
+        paint.getTextBounds("00:00:000", 0, 9, bounds)
         textSize.x = bounds.width()
         textSize.y = bounds.height()
         spaceSize = textSize.x.toFloat()
 
         cursorSize = applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2f)
         cursorRect.set(0, 0, textSize.x / 2, cursorSize.toInt())
+    }
+
+    override fun setViewModel(multiTrackViewModel: MultiTrackViewModel) {
+        TODO("Not yet implemented")
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -82,9 +88,10 @@ class TimelineView : View, BaseView {
         return TypedValue.applyDimension(unit, value, r.displayMetrics)
     }
 
-    fun setDuration(us: Long) {
-        if (us > 0 && this.durationInUS != us) {
+    fun setDuration(us: Long, frames: Int) {
+        if (us > 0 && frames != FramesType.FRAMES_UNKNOWN) {
             this.durationInUS = us
+            this.mFrames = frames
             post {
                 textVec.clear()
                 measureText()
@@ -113,13 +120,11 @@ class TimelineView : View, BaseView {
             textVec.clear()
             return 0
         }
+        // 包括起始的一个text长度的时间轴总长
         val visibleWidth = measuredWidth + textSize.x - paddingLeft - paddingRight
         var count = visibleWidth / (textSize.x + cursorRect.width())
-        if (textVec.size == count) {
-            return count
-        }
-
         if (textVec.isNotEmpty()) {
+            // keepZoomLevel重新测量间距
             if (Int.MIN_VALUE != keepZoomLevel(visibleWidth)) {
                 return textVec.size
             }
@@ -134,7 +139,10 @@ class TimelineView : View, BaseView {
         if (count > 1) {
             spaceSize = (visibleWidth - textSize.x * count) / (count - 1).toFloat()
             for (i in 0 until count) {
-                textVec.add(fmt.format(Date(i * durationInUS / (count - 1) / 1000)))
+                // durationInUS已经是毫秒级的参数，省略小数点后的部分，不需要再除1000
+                val value = i * durationInUS / (count - 1)
+                val scaleValue = fmt.format(Date(value))
+                textVec.add(scaleValue)
             }
         } else {
             spaceSize = (visibleWidth - textSize.x).toFloat()

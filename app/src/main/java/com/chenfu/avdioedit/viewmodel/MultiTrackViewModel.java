@@ -1,12 +1,18 @@
 package com.chenfu.avdioedit.viewmodel;
 
-import com.chenfu.avdioedit.base.BaseViewModel;
-import com.chenfu.avdioedit.base.Impl;
+import androidx.lifecycle.MutableLiveData;
 
-public class MultiTrackViewModel extends BaseViewModel<Impl> {
+import com.chenfu.avdioedit.base.BaseViewModel;
+import com.chenfu.avdioedit.model.data.CropModel;
+import com.chenfu.avdioedit.model.impl.MultiTrackImpl;
+
+public class MultiTrackViewModel extends BaseViewModel<MultiTrackImpl> {
+
+    public final CropModel cropModel = new CropModel();
+
     @Override
-    protected Impl bindImpl() {
-        return null;
+    protected MultiTrackImpl bindImpl() {
+        return new MultiTrackImpl(this);
     }
 
     @Override

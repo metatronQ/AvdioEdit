@@ -14,9 +14,10 @@ import android.view.ScaleGestureDetector
 import android.widget.HorizontalScrollView
 import androidx.annotation.AttrRes
 import androidx.core.view.GestureDetectorCompat
-import com.chenfu.avdioedit.base.BaseView
-import com.chenfu.avdioedit.view.multitrack.model.MediaTrack
+import com.chenfu.avdioedit.model.data.MediaTrack
 import com.chenfu.avdioedit.view.multitrack.widget.ScaleRational
+import com.chenfu.avdioedit.viewmodel.MultiTrackViewModel
+import com.example.ndk_source.util.LogUtil
 
 /**
  * 参照简书
@@ -70,7 +71,7 @@ class TrackContainer : HorizontalScrollView, BaseView {
 
     override fun onInitialize(context: Context) {
         cursorSize = applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2f)
-        paint.color = Color.WHITE
+        paint.color = Color.BLUE
         mGestureDetector = GestureDetectorCompat(context, onGestureListener)
         mScaleDetector = ScaleGestureDetector(context, mScaleListener)
         mTrackView = TrackView(context)
@@ -85,7 +86,25 @@ class TrackContainer : HorizontalScrollView, BaseView {
         }
     }
 
-    private fun getChildView(): TrackView = mTrackView
+    override fun setViewModel(multiTrackViewModel: MultiTrackViewModel) {
+        getChildView().setViewModel(multiTrackViewModel)
+    }
+
+    public fun getChildView(): TrackView = mTrackView
+
+    override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
+        super.onScrollChanged(l, t, oldl, oldt)
+//        LogUtil.packageName(context).v("$l $t $oldl $oldt")
+        if (!isDoublePointer) {
+            // scrollX / (mTrackView.measuredWidth - measuredWidth).toFloat()为滚动的距离占缩放后的originWidth的百分比
+            // measuredWidth为两个padding长
+            // 可以用来确定裁剪的位置
+            mOnSeekBarChangeListener?.onProgressChanged(
+                l / (mTrackView.measuredWidth - measuredWidth).toFloat(),
+                true
+            )
+        }
+    }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.action and MotionEvent.ACTION_MASK) {
@@ -107,12 +126,6 @@ class TrackContainer : HorizontalScrollView, BaseView {
                 if (isDoublePointer && mScaleDetector.onTouchEvent(event)) {
                     setProgress(progress)
                     return true
-                }
-                if (!isDoublePointer) {
-                    mOnSeekBarChangeListener?.onProgressChanged(
-                        scrollX / (mTrackView.measuredWidth - measuredWidth).toFloat(),
-                        true
-                    )
                 }
             }
         }
@@ -141,8 +154,8 @@ class TrackContainer : HorizontalScrollView, BaseView {
         )
     }
 
-    fun setDuration(us: Long) {
-        mTrackView.setDuration(us)
+    fun setDuration(us: Long, frames: Int) {
+        mTrackView.setDuration(us, frames)
     }
 
     fun addTrack(track: MediaTrack) {
