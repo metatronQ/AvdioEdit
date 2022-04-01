@@ -45,6 +45,7 @@ dependencies {
 
     // 本地依赖
     implementation project(path: ':ndk_source')
+    implementation project(path: ':FFmpageAndroid')
     implementation "androidx.core:core-ktx:+"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }

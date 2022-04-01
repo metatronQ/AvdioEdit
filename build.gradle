@@ -4,10 +4,14 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        jcenter()
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:4.2.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
+        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.1"
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -18,6 +22,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        jcenter()
     }
 }
 
@@ -25,6 +30,13 @@ ext {
     rxjavaVersion = '2.2.6'
     rxandroidVersion = '2.1.1'
     kotlinxCoroutinesVersion = '1.3.3'
+
+    compileSdkVersion = 31
+    buildToolsVersion = '22.0.1'
+    targetSdkVersion = 31
+    minSdkVersion = 21
+    versionCode = 28
+    versionName = "0.3.2"
 }
 
 task clean(type: Delete) {
