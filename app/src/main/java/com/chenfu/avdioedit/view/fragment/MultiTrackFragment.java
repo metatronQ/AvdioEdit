@@ -7,10 +7,10 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.chenfu.avdioedit.R;
 import com.chenfu.avdioedit.base.BaseFragment;
+import com.chenfu.avdioedit.util.IdUtils;
 import com.chenfu.avdioedit.view.multitrack.TrackContainer;
-import com.chenfu.avdioedit.model.data.MediaTrack;
+import com.chenfu.avdioedit.model.data.MediaTrackModel;
 import com.chenfu.avdioedit.viewmodel.MultiTrackViewModel;
-import com.example.ndk_source.util.LogUtil;
 
 public class MultiTrackFragment extends BaseFragment {
 
@@ -19,39 +19,19 @@ public class MultiTrackFragment extends BaseFragment {
 
     private MultiTrackViewModel multiTrackViewModel;
 
-    private Observer<MediaTrack> updateTrackObserver = new Observer<MediaTrack>() {
+    private Observer<MediaTrackModel> updateTrackObserver = new Observer<MediaTrackModel>() {
         @Override
-        public void onChanged(MediaTrack mediaTrack) {
-            //                MediaTrack childTrack = new MediaTrack();
-//                childTrack.setId(0);
-//                childTrack.setSeqIn(0);
-//                childTrack.setSeqOut(mediaTrack.getDuration());
-//                childTrack.setDuration(childTrack.getSeqOut() - childTrack.getSeqIn());
-//                childTrack.setType(mediaTrack.getType());
-//                childTrack.setFrames(mediaTrack.getFrames());
-
-//                MediaTrack childTrack1 = new MediaTrack();
-//                childTrack1.setId(1);
-//                childTrack1.setDuration(mediaTrack.getDuration());
-//                childTrack1.setSeqIn(mediaTrack.getDuration() / 2);
-//                childTrack1.setSeqOut(mediaTrack.getDuration());
-//                childTrack1.setDuration(childTrack.getSeqOut() - childTrack.getSeqIn());
-//                childTrack1.setType(mediaTrack.getType());
-//                childTrack1.setFrames(mediaTrack.getFrames());
-
-//                mediaTrack.getChildMedias().put(childTrack.getId(), childTrack);
-//                mediaTrack.getChildMedias().put(childTrack1.getId(), childTrack1);
-//                mTrackContainer.setProgress(0.5f);
-            if (mediaTrack.getId() == -1) {
-                mediaTrack.setId(mTrackContainer.getChildView().getTrackMap().size());
-                mTrackContainer.setDuration(mediaTrack.getDuration(), mediaTrack.getFrames());
-                mTrackContainer.addTrack(mediaTrack);
+        public void onChanged(MediaTrackModel mediaTrackModel) {
+            if (mediaTrackModel.getId() == -1) {
+                mediaTrackModel.setId(IdUtils.INSTANCE.getNewestTrackId());
+                mTrackContainer.setDuration(mediaTrackModel.getDuration(), mediaTrackModel.getFrames());
+                mTrackContainer.addTrack(mediaTrackModel);
             } else {
-                mTrackContainer.updateTrack(mediaTrack);
+                mTrackContainer.updateTrack(mediaTrackModel);
             }
             if (routerViewModel.cropData.getValue() != null) {
                 // 更新公用的TrackTreeMap
-                routerViewModel.cropData.getValue().setMediaTrackMap(mTrackContainer.getChildView().getTrackMap());
+                routerViewModel.cropData.getValue().setMediaTrackModelMap(mTrackContainer.getChildView().getTrackMap());
             }
         }
     };
@@ -71,7 +51,7 @@ public class MultiTrackFragment extends BaseFragment {
                 mProgress = progress;
                 // 这里获取offset有问题，由于HorizontalScrollView计算了速度，最终scroll得到的位置可能不准确
                 // -> 更新放在onScrollChanged，而不是TouchEvent的move分支中
-                multiTrackViewModel.cropModel.setCursorOffset(Math.round(mTrackContainer.getChildView().getMaxDuration() * mProgress));
+                multiTrackViewModel.cropModel.setCursorOffset(Math.round(mTrackContainer.getChildView().getTimeDuration() * mProgress));
             }
 
             @Override
@@ -91,12 +71,16 @@ public class MultiTrackFragment extends BaseFragment {
 
     @Override
     protected void observeActions() {
+        multiTrackViewModel.updateTrack.observeForever(updateTrackObserver);
+
         routerViewModel.deliverMediaTrack.observeForever(updateTrackObserver);
     }
 
     @Override
     protected void removeObserversAndDispose() {
         super.removeObserversAndDispose();
+        multiTrackViewModel.updateTrack.removeObserver(updateTrackObserver);
+
         routerViewModel.deliverMediaTrack.removeObserver(updateTrackObserver);
     }
 }

@@ -9,4 +9,6 @@ public interface LeftEditInterface extends Impl {
     void launch();
 
     void crop(Context context, CropModel cropModel);
+
+
 }

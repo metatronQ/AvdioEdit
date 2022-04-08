@@ -8,12 +8,12 @@ import com.chenfu.avdioedit.Interface.LeftEditInterface;
 import com.chenfu.avdioedit.model.data.CropModel;
 import com.chenfu.avdioedit.model.data.FramesType;
 import com.chenfu.avdioedit.util.FFmpegUtils;
-import com.chenfu.avdioedit.model.data.MediaTrack;
+import com.chenfu.avdioedit.model.data.MediaTrackModel;
+import com.chenfu.avdioedit.util.IdUtils;
 import com.chenfu.avdioedit.viewmodel.LeftEditViewModel;
 import com.example.ndk_source.util.LogUtil;
 import com.example.ndk_source.util.ToastUtil;
 
-import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
@@ -46,8 +46,8 @@ public class LeftEditImpl implements LeftEditInterface {
         LogUtil.INSTANCE
                 .manualPkgName("com.chenfu.avdioedit")
                 .d(cropModel.getContainerId() + " " + cropModel.getSegmentId() + " " + cropModel.getCursorOffset());
-        MediaTrack track = cropModel.getTrack();
-        MediaTrack trackSeg = cropModel.getTrackSeg();
+        MediaTrackModel track = cropModel.getTrack();
+        MediaTrackModel trackSeg = cropModel.getTrackSeg();
         if (track == null || trackSeg == null) {
             return;
         }
@@ -95,42 +95,37 @@ public class LeftEditImpl implements LeftEditInterface {
         String formatDuration = fmt.format(new Date(trackSeg.getDuration()));
         String formatOff2Dura = fmt.format(new Date(trackSeg.getDuration() - offsetReal));
 
-        MediaTrack mediaTrackOut1 = trackSeg.clone();
+        MediaTrackModel mediaTrackModelOut1 = trackSeg.clone();
         // 裁剪的前一段id = 选中
-        mediaTrackOut1.setId(trackSeg.getId());
-        mediaTrackOut1.setPath(outPath1);
-        mediaTrackOut1.setSeqIn(trackSeg.getSeqIn());
-        mediaTrackOut1.setSeqOut(cropModel.getCursorOffset());
-        mediaTrackOut1.setDuration(mediaTrackOut1.getSeqOut() - mediaTrackOut1.getSeqIn());
-        mediaTrackOut1.getChildMedias().clear();
+        mediaTrackModelOut1.setId(trackSeg.getId());
+        mediaTrackModelOut1.setPath(outPath1);
+        mediaTrackModelOut1.setSeqIn(trackSeg.getSeqIn());
+        mediaTrackModelOut1.setSeqOut(cropModel.getCursorOffset());
+        mediaTrackModelOut1.setDuration(mediaTrackModelOut1.getSeqOut() - mediaTrackModelOut1.getSeqIn());
+        mediaTrackModelOut1.getChildMedias().clear();
 
-        MediaTrack mediaTrackOut2 = mediaTrackOut1.clone();
+        MediaTrackModel mediaTrackModelOut2 = mediaTrackModelOut1.clone();
         // 裁剪的后一段id = 选中 + 1
-        mediaTrackOut2.setId(trackSeg.getId() + 1);
-        mediaTrackOut2.setPath(outPath2);
-        mediaTrackOut2.setSeqIn(cropModel.getCursorOffset());
-        mediaTrackOut2.setSeqOut(trackSeg.getSeqOut());
-        mediaTrackOut2.setDuration(mediaTrackOut2.getSeqOut() - mediaTrackOut2.getSeqIn());
+        mediaTrackModelOut2.setId(IdUtils.INSTANCE.getNewestSegmentId());
+        mediaTrackModelOut2.setPath(outPath2);
+        mediaTrackModelOut2.setSeqIn(cropModel.getCursorOffset());
+        mediaTrackModelOut2.setSeqOut(trackSeg.getSeqOut());
+        mediaTrackModelOut2.setDuration(mediaTrackModelOut2.getSeqOut() - mediaTrackModelOut2.getSeqIn());
 
         track.getChildMedias().remove(trackSeg.getId());
-        track.getChildMedias().put(mediaTrackOut1.getId(), mediaTrackOut1);
-        track.getChildMedias().put(mediaTrackOut2.getId(), mediaTrackOut2);
+        track.getChildMedias().put(mediaTrackModelOut1.getId(), mediaTrackModelOut1);
+        track.getChildMedias().put(mediaTrackModelOut2.getId(), mediaTrackModelOut2);
+
+        // 裁剪输出应该是两段文件
+        String cmdString = spliceString(
+                "-y",
+                "-i", trackSeg.getPath(),
+                "-ss" + "  " + format0 + "  " + "-t" + "  " + formatOffset + "  " + "-c  copy", outPath1,
+                "-ss" + "  " + formatOffset + "  " + "-t" + "  " + formatOff2Dura + "  " + "-c  copy", outPath2
+        );
 
         AtomicBoolean isOut = new AtomicBoolean(false);
-        FFmpegUtils.INSTANCE.CropVideoByCopy(
-                context,
-                trackSeg.getPath(),
-                outPath1,
-                "-ss" + " "
-                        + format0 + " "
-                        + "-t" + " "
-                        + formatOffset,
-                outPath2,
-                "-ss" + " "
-                        + formatOffset + " "
-                        + "-t" + " "
-                        + formatOff2Dura,
-                () -> isOut.set(true));
+        FFmpegUtils.INSTANCE.generateCmd(cmdString, () -> isOut.set(true)).start(context);
 
         if (timer != null && !timer.isDisposed()) timer.dispose();
         timer = Observable.interval(1, TimeUnit.SECONDS)
@@ -148,6 +143,14 @@ public class LeftEditImpl implements LeftEditInterface {
                         timer.dispose();
                     }
                 });
+    }
+
+    private String spliceString(String ...values) {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < values.length - 1; i++) {
+            stringBuilder.append(values[i]).append("  ");
+        }
+        return stringBuilder.append(values[values.length - 1]).toString();
     }
 
     @Override

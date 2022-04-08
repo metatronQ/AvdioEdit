@@ -13,7 +13,7 @@ import com.chenfu.avdioedit.R;
 import com.chenfu.avdioedit.base.BaseFragment;
 import com.chenfu.avdioedit.model.data.ProgressModel;
 import com.chenfu.avdioedit.model.data.VideoModel;
-import com.chenfu.avdioedit.model.data.MediaTrack;
+import com.chenfu.avdioedit.model.data.MediaTrackModel;
 import com.chenfu.avdioedit.viewmodel.PlayerViewModel;
 
 public class PlayerFragment extends BaseFragment {
@@ -59,10 +59,10 @@ public class PlayerFragment extends BaseFragment {
         }
     };
 
-    private Observer<MediaTrack> mediaTrackObserver = new Observer<MediaTrack>() {
+    private Observer<MediaTrackModel> mediaTrackObserver = new Observer<MediaTrackModel>() {
         @Override
-        public void onChanged(MediaTrack mediaTrack) {
-            routerViewModel.deliverMediaTrack.setValue(mediaTrack);
+        public void onChanged(MediaTrackModel mediaTrackModel) {
+            routerViewModel.deliverMediaTrack.setValue(mediaTrackModel);
         }
     };
 

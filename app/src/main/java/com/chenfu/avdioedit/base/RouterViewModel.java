@@ -4,7 +4,7 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.chenfu.avdioedit.model.data.CropModel;
-import com.chenfu.avdioedit.model.data.MediaTrack;
+import com.chenfu.avdioedit.model.data.MediaTrackModel;
 
 /**
  * 用于Fragment与fragment、activity之间通信，不包含业务逻辑
@@ -25,7 +25,7 @@ public class RouterViewModel extends ViewModel {
 
     public MutableLiveData<String> deliverFilePath = new MutableLiveData<>();
 
-    public MutableLiveData<MediaTrack> deliverMediaTrack = new MutableLiveData<>();
+    public MutableLiveData<MediaTrackModel> deliverMediaTrack = new MutableLiveData<>();
 
     public MutableLiveData<CropModel> cropData = new MutableLiveData<>();
 }

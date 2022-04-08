@@ -3,10 +3,10 @@ package com.chenfu.avdioedit.model.data
 import android.os.Parcel
 import android.os.Parcelable
 
-class MediaTrack() : Parcelable, Comparable<MediaTrack> {
+class MediaTrackModel() : Parcelable, Comparable<MediaTrackModel> {
     // -1代表初始或新增轨道
     var id: Int = -1
-    var childMedias: HashMap<Int, MediaTrack> = HashMap()
+    var childMedias: HashMap<Int, MediaTrackModel> = HashMap()
     var type: Int = MediaType.TYPE_UNKNOWN
     var seqIn = 0L
     var seqOut = 0L
@@ -17,49 +17,49 @@ class MediaTrack() : Parcelable, Comparable<MediaTrack> {
 
     constructor(parcel: Parcel) : this() {
         id = parcel.readInt()
-        childMedias = parcel.readHashMap(MediaTrack::class.java.classLoader) as HashMap<Int, MediaTrack>
         type = parcel.readInt()
         seqIn = parcel.readLong()
         seqOut = parcel.readLong()
         duration = parcel.readLong()
         path = parcel.readString().toString()
         frames = parcel.readInt()
+        childMedias = parcel.readHashMap(MediaTrackModel::class.java.classLoader) as HashMap<Int, MediaTrackModel>
     }
 
-    constructor(id: Int, type: Int) : this(Parcel.obtain()) {
-        this.id = id
-        this.type = type
-    }
+//    constructor(id: Int, type: Int) : this(Parcel.obtain()) {
+//        this.id = id
+//        this.type = type
+//    }
 
-    override fun compareTo(other: MediaTrack): Int = this.id.compareTo(other.id)
+    override fun compareTo(other: MediaTrackModel): Int = this.id.compareTo(other.id)
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeInt(id)
-        parcel.writeMap(childMedias)
         parcel.writeInt(type)
         parcel.writeLong(seqIn)
         parcel.writeLong(seqOut)
         parcel.writeLong(duration)
         parcel.writeString(path)
         parcel.writeInt(frames)
+        parcel.writeMap(childMedias)
     }
 
     override fun describeContents(): Int {
         return 0
     }
 
-    companion object CREATOR : Parcelable.Creator<MediaTrack> {
-        override fun createFromParcel(parcel: Parcel): MediaTrack {
-            return MediaTrack(parcel)
+    companion object CREATOR : Parcelable.Creator<MediaTrackModel> {
+        override fun createFromParcel(parcel: Parcel): MediaTrackModel {
+            return MediaTrackModel(parcel)
         }
 
-        override fun newArray(size: Int): Array<MediaTrack?> {
+        override fun newArray(size: Int): Array<MediaTrackModel?> {
             return arrayOfNulls(size)
         }
     }
 
-    fun clone() : MediaTrack {
-        val clone = MediaTrack()
+    fun clone() : MediaTrackModel {
+        val clone = MediaTrackModel()
         clone.id = this.id
         clone.type = this.type
         clone.seqIn = this.seqIn
@@ -70,7 +70,7 @@ class MediaTrack() : Parcelable, Comparable<MediaTrack> {
         // 对象不能直接赋值
         clone.childMedias = HashMap()
         this.childMedias.forEach {
-            clone.childMedias[it.key] = it.value
+            clone.childMedias[it.key] = it.value.clone()
         }
         return clone
     }

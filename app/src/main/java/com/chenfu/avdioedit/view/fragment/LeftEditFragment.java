@@ -1,20 +1,21 @@
 package com.chenfu.avdioedit.view.fragment;
 
 import android.view.View;
+import android.widget.TextView;
 
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.chenfu.avdioedit.R;
 import com.chenfu.avdioedit.base.BaseFragment;
-import com.chenfu.avdioedit.model.data.MediaTrack;
+import com.chenfu.avdioedit.model.data.MediaTrackModel;
 import com.chenfu.avdioedit.viewmodel.LeftEditViewModel;
 
 public class LeftEditFragment extends BaseFragment {
     private LeftEditViewModel leftEditViewModel;
 
     private Observer<Boolean> openSaf;
-    private Observer<MediaTrack> cropResult;
+    private Observer<MediaTrackModel> cropResult;
 
     @Override
     protected int getLayoutId() {

@@ -7,20 +7,20 @@ class CropModel {
     var segmentId = -1
     var cursorOffset = 0L
     // 轨道总和Map
-    var mediaTrackMap: TreeMap<Int, MediaTrack> ?= null
+    var mediaTrackModelMap: TreeMap<Int, MediaTrackModel> ?= null
 
-    fun getTrack(): MediaTrack? {
+    fun getTrack(): MediaTrackModel? {
         return if (containerId != -1) {
-            mediaTrackMap?.get(containerId)?.clone()
+            mediaTrackModelMap?.get(containerId)?.clone()
         } else {
             null
         }
     }
 
-    fun getTrackSeg(): MediaTrack? {
+    fun getTrackSeg(): MediaTrackModel? {
         return if (containerId != -1 && segmentId != -1) {
             // 只要有一个为null就是null
-            mediaTrackMap?.get(containerId)?.childMedias?.get(segmentId)?.clone()
+            mediaTrackModelMap?.get(containerId)?.childMedias?.get(segmentId)?.clone()
         } else {
             null
         }

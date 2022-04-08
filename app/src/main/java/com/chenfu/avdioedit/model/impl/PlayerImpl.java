@@ -11,9 +11,10 @@ import com.chenfu.avdioedit.Interface.PlayerInterface;
 import com.chenfu.avdioedit.enums.VideoStatus;
 import com.chenfu.avdioedit.model.data.ProgressModel;
 import com.chenfu.avdioedit.model.data.VideoModel;
+import com.chenfu.avdioedit.util.IdUtils;
 import com.chenfu.avdioedit.util.RxUtils;
 import com.chenfu.avdioedit.model.data.FramesType;
-import com.chenfu.avdioedit.model.data.MediaTrack;
+import com.chenfu.avdioedit.model.data.MediaTrackModel;
 import com.chenfu.avdioedit.model.data.MediaType;
 import com.chenfu.avdioedit.viewmodel.PlayerViewModel;
 import com.example.ndk_source.util.LogUtil;
@@ -254,28 +255,28 @@ public class PlayerImpl implements PlayerInterface,
         videoModel.vWidth = mediaPlayer.getVideoWidth();
         videoModel.vHeight = mediaPlayer.getVideoHeight();
 
-        MediaTrack mediaTrack = new MediaTrack();
-        mediaTrack.setId(-1);
-        mediaTrack.setType(MediaType.TYPE_UNKNOWN);
-        mediaTrack.setDuration(mediaPlayer.getDuration());
-        mediaTrack.setSeqIn(0);
-        mediaTrack.setSeqOut(mediaTrack.getDuration());
-        mediaTrack.setPath(url);
+        MediaTrackModel mediaTrackModel = new MediaTrackModel();
+        mediaTrackModel.setId(-1);
+        mediaTrackModel.setType(MediaType.TYPE_UNKNOWN);
+        mediaTrackModel.setDuration(mediaPlayer.getDuration());
+        mediaTrackModel.setSeqIn(0);
+        mediaTrackModel.setSeqOut(mediaTrackModel.getDuration());
+        mediaTrackModel.setPath(url);
         // FIXME 此处应该通过底层获取视频帧数
         // TEST
-        mediaTrack.setFrames(FramesType.FRAMES_60);
+        mediaTrackModel.setFrames(FramesType.FRAMES_60);
 
-        MediaTrack child = mediaTrack.clone();
-        child.setId(0);
+        MediaTrackModel child = mediaTrackModel.clone();
+        child.setId(IdUtils.INSTANCE.getNewestSegmentId());
         // 新建轨道中包含本身
-        mediaTrack.getChildMedias().put(child.getId(), child);
+        mediaTrackModel.getChildMedias().put(child.getId(), child);
 
         // 准备中取值为null
         // mediaTrack.setFrames((Integer) mediaPlayer.getMetrics().get(MediaPlayer.MetricsConstants.FRAMES));
 
         playerViewModel.showPosition.setValue(progressModel);
         playerViewModel.recalculationScreen.setValue(videoModel);
-        playerViewModel.notifyMultiTrack.setValue(mediaTrack);
+        playerViewModel.notifyMultiTrack.setValue(mediaTrackModel);
 
         videoStatus = VideoStatus.PREPARE_FINISH;
     }

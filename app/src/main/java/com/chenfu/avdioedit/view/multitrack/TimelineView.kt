@@ -90,6 +90,7 @@ class TimelineView : View, BaseView {
 
     fun setDuration(us: Long, frames: Int) {
         if (us > 0 && frames != FramesType.FRAMES_UNKNOWN) {
+            // 不需要加2s的扩展时间，因为加2s会在裁剪上出现时间问题
             this.durationInUS = us
             this.mFrames = frames
             post {

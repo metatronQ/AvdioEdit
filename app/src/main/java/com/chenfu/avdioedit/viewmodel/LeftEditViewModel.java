@@ -7,12 +7,12 @@ import androidx.lifecycle.MutableLiveData;
 import com.chenfu.avdioedit.base.BaseViewModel;
 import com.chenfu.avdioedit.model.data.CropModel;
 import com.chenfu.avdioedit.model.impl.LeftEditImpl;
-import com.chenfu.avdioedit.model.data.MediaTrack;
+import com.chenfu.avdioedit.model.data.MediaTrackModel;
 
 public class LeftEditViewModel extends BaseViewModel<LeftEditImpl> {
 
     public MutableLiveData<Boolean> launchSaf = new MutableLiveData<>();
-    public MutableLiveData<MediaTrack> cropResultLiveData = new MutableLiveData<>();
+    public MutableLiveData<MediaTrackModel> cropResultLiveData = new MutableLiveData<>();
 
     @Override
     protected LeftEditImpl bindImpl() {

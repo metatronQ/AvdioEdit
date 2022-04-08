@@ -14,10 +14,9 @@ import android.view.ScaleGestureDetector
 import android.widget.HorizontalScrollView
 import androidx.annotation.AttrRes
 import androidx.core.view.GestureDetectorCompat
-import com.chenfu.avdioedit.model.data.MediaTrack
+import com.chenfu.avdioedit.model.data.MediaTrackModel
 import com.chenfu.avdioedit.view.multitrack.widget.ScaleRational
 import com.chenfu.avdioedit.viewmodel.MultiTrackViewModel
-import com.example.ndk_source.util.LogUtil
 
 /**
  * 参照简书
@@ -158,12 +157,12 @@ class TrackContainer : HorizontalScrollView, BaseView {
         mTrackView.setDuration(us, frames)
     }
 
-    fun addTrack(track: MediaTrack) {
-        mTrackView.addTrack(track)
+    fun addTrack(trackModel: MediaTrackModel) {
+        mTrackView.addTrack(trackModel)
     }
 
-    fun updateTrack(track: MediaTrack) {
-        mTrackView.updateTrack(track)
+    fun updateTrack(trackModel: MediaTrackModel) {
+        mTrackView.updateTrack(trackModel)
     }
 
     fun setProgress(progress: Float) {
