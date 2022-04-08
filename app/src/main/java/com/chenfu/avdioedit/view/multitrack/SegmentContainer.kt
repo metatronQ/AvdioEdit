@@ -14,7 +14,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.annotation.AttrRes
+import androidx.core.content.ContextCompat
 import androidx.core.view.size
+import com.chenfu.avdioedit.R
 import com.chenfu.avdioedit.util.DisplayUtils
 import com.chenfu.avdioedit.model.data.MediaTrackModel
 import com.chenfu.avdioedit.model.data.MediaType
@@ -72,11 +74,6 @@ class SegmentContainer : ViewGroup, BaseView {
     ) {}
 
     override fun onInitialize(context: Context) {
-        background = GradientDrawable().run {
-            shape = GradientDrawable.RECTANGLE
-            setStroke(DisplayUtils.dip2px(context, 1f), Color.BLACK)
-            this
-        }
         resetSelected()
         mMediaTrackModel.childMedias.forEach {
             tvMap[it.key] = generateTv(it.value)
@@ -183,6 +180,26 @@ class SegmentContainer : ViewGroup, BaseView {
             }
             true
         }
+
+        setOnClickListener {
+            multiViewModel?.run {
+                if (isSelected) {
+                    isSelected = false
+                    cropModel.segmentId = -1
+                    cropModel.containerId = -1
+                } else {
+                    updateSelectedStatusListener.update(cropModel.containerId, cropModel.segmentId)
+                    isSelected = true
+                    // container更新selected状态会将子View一并更新
+                    tvMap.forEach {
+                        it.value.isSelected = false
+                    }
+                    cropModel.segmentId = -1
+                    cropModel.containerId = mMediaTrackModel.id
+                }
+            }
+        }
+        background = ContextCompat.getDrawable(context, R.drawable.track_select_bg)
     }
 
     /**
@@ -213,38 +230,6 @@ class SegmentContainer : ViewGroup, BaseView {
     private fun updateSegModelSeq(segmentModel: MediaTrackModel, seqIn: Long) {
         segmentModel.seqIn = seqIn
         segmentModel.seqOut = segmentModel.seqIn + segmentModel.duration
-    }
-
-    private fun keepNotOverlay(
-        reference: Long, childTrackModel: MediaTrackModel,
-        seg0Center: Long, seg0: MediaTrackModel,
-        nowTrackModel: MediaTrackModel
-    ) {
-        val seg0OldOut = seg0.seqOut
-        if (reference >= seg0Center) {
-            childTrackModel.seqIn = seg0.seqOut
-            childTrackModel.seqOut = childTrackModel.seqIn + childTrackModel.duration
-        } else {
-            childTrackModel.seqIn = seg0.seqIn
-            childTrackModel.seqOut = childTrackModel.seqIn + childTrackModel.duration
-            seg0.seqIn = childTrackModel.seqOut
-            seg0.seqOut = seg0.seqIn + seg0.duration
-        }
-        // 更新timeDuration
-        var furthest = nowTrackModel.duration
-        nowTrackModel.childMedias.forEach {
-            if (it.key != childTrackModel.id && it.key != seg0.id
-                && it.value.seqIn >= seg0OldOut) {
-                it.value.seqIn += childTrackModel.duration
-                it.value.seqOut += childTrackModel.duration
-            }
-            furthest = if (furthest < it.value.seqOut) {
-                it.value.seqOut
-            } else {
-                furthest
-            }
-        }
-        nowTrackModel.duration = furthest
     }
 
     override fun setViewModel(multiTrackViewModel: MultiTrackViewModel) {
@@ -335,11 +320,27 @@ class SegmentContainer : ViewGroup, BaseView {
             tvMap[it.key] = generateTv(it.value)
             addView(tvMap[it.key])
         }
-        requestLayout()
+        // 外部每次调用后都会requestLayout
+//        requestLayout()
 //        updateAudioTrack(track)
     }
 
+    fun getMaxSeqOut(): Long {
+        if (mMediaTrackModel.childMedias.size == 0) {
+            return 0
+        }
+        val array = ArrayList(mMediaTrackModel.childMedias.values)
+        if (array.size == 1) {
+            return array[0].seqOut
+        }
+        val sortedArray = array.sortedByDescending {
+            it.seqOut
+        }
+        return sortedArray[0].seqOut
+    }
+
     fun clearLastSelectedStatus(segmentId: Int) {
+        isSelected = false
         tvMap[segmentId]?.isSelected = false
     }
 

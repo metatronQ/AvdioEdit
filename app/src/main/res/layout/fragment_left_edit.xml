@@ -7,7 +7,7 @@
     tools:background="#4CAF50">
 
     <TextView
-        android:id="@+id/get_video_tv"
+        android:id="@+id/get_avideo_tv"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/black"
@@ -18,16 +18,80 @@
         android:textStyle="bold" />
 
     <TextView
-        android:id="@+id/crop_video_tv"
+        android:id="@+id/crop_avideo_tv"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/black"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="30dp"
         android:gravity="center"
         android:text="剪切"
         android:textColor="@color/white"
         android:textSize="14sp"
         android:textStyle="bold"
-        android:layout_below="@id/get_video_tv"/>
+        android:layout_below="@id/get_avideo_tv"/>
 
+    <TextView
+        android:id="@+id/merge_avideo_tv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/black"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:text="拼合"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_below="@id/crop_avideo_tv"/>
+
+    <TextView
+        android:id="@+id/separate_avideo_tv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/black"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:text="音视分离"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_below="@id/merge_avideo_tv"/>
+
+    <TextView
+        android:id="@+id/delete_segment_tv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/black"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:text="删除片段"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_below="@id/separate_avideo_tv"/>
+
+    <TextView
+        android:id="@+id/add_empty_track_tv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/black"
+        android:layout_marginTop="30dp"
+        android:gravity="center"
+        android:text="+空轨道"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_below="@id/delete_segment_tv"/>
+
+    <TextView
+        android:id="@+id/delete_track_tv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/black"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:text="删除轨道"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_below="@id/add_empty_track_tv"/>
 </RelativeLayout>

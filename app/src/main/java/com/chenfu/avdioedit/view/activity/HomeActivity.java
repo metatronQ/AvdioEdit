@@ -29,7 +29,7 @@ public class HomeActivity extends MyBaseActivity {
             ActivityCompat.requestPermissions(getActivity(), PERMISSON_STORAGE, REQUEST_EXTERNAL_STORAGE);
             return;
         }
-        launch(path -> setPath(path));
+        launch(this::setPath);
     };
 
     @Override

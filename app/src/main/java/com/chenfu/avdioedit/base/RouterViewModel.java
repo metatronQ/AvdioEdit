@@ -1,5 +1,7 @@
 package com.chenfu.avdioedit.base;
 
+import android.util.Pair;
+
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
@@ -28,4 +30,13 @@ public class RouterViewModel extends ViewModel {
     public MutableLiveData<MediaTrackModel> deliverMediaTrack = new MutableLiveData<>();
 
     public MutableLiveData<CropModel> cropData = new MutableLiveData<>();
+
+    // <containerId, segId>
+    public MutableLiveData<Pair<Integer, Integer>> deleteTrackOrSegment = new MutableLiveData<>();
+
+    public int trackCount = 0;
+
+    public boolean isTrackFull() {
+        return trackCount >= 5;
+    }
 }

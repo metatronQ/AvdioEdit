@@ -1,5 +1,6 @@
 package com.chenfu.avdioedit.view.fragment;
 
+import android.util.Pair;
 import android.view.View;
 
 import androidx.lifecycle.Observer;
@@ -11,6 +12,7 @@ import com.chenfu.avdioedit.util.IdUtils;
 import com.chenfu.avdioedit.view.multitrack.TrackContainer;
 import com.chenfu.avdioedit.model.data.MediaTrackModel;
 import com.chenfu.avdioedit.viewmodel.MultiTrackViewModel;
+import com.example.ndk_source.util.ToastUtil;
 
 public class MultiTrackFragment extends BaseFragment {
 
@@ -19,13 +21,21 @@ public class MultiTrackFragment extends BaseFragment {
 
     private MultiTrackViewModel multiTrackViewModel;
 
-    private Observer<MediaTrackModel> updateTrackObserver = new Observer<MediaTrackModel>() {
+    private final Observer<MediaTrackModel> updateTrackObserver = new Observer<MediaTrackModel>() {
         @Override
         public void onChanged(MediaTrackModel mediaTrackModel) {
             if (mediaTrackModel.getId() == -1) {
+                if (mTrackContainer.getChildView().getTrackMap().size() == 0 &&
+                        mediaTrackModel.getDuration() <= 0) {
+                    // 无现存轨道则不能新增空轨道
+                    ToastUtil.INSTANCE.show(requireContext(), "请先添加有效轨道");
+                    return;
+                }
                 mediaTrackModel.setId(IdUtils.INSTANCE.getNewestTrackId());
-                mTrackContainer.setDuration(mediaTrackModel.getDuration(), mediaTrackModel.getFrames());
+                mTrackContainer.setDuration(mediaTrackModel.getDuration());
                 mTrackContainer.addTrack(mediaTrackModel);
+
+                routerViewModel.trackCount++;
             } else {
                 mTrackContainer.updateTrack(mediaTrackModel);
             }
@@ -33,6 +43,13 @@ public class MultiTrackFragment extends BaseFragment {
                 // 更新公用的TrackTreeMap
                 routerViewModel.cropData.getValue().setMediaTrackModelMap(mTrackContainer.getChildView().getTrackMap());
             }
+        }
+    };
+
+    private final Observer<Pair<Integer, Integer>> deleteTrackOrSegObserver = pair -> {
+        mTrackContainer.deleteTrackOrSeg(pair.first, pair.second);
+        if (pair.second == -1) {
+            routerViewModel.trackCount--;
         }
     };
 
@@ -74,6 +91,7 @@ public class MultiTrackFragment extends BaseFragment {
         multiTrackViewModel.updateTrack.observeForever(updateTrackObserver);
 
         routerViewModel.deliverMediaTrack.observeForever(updateTrackObserver);
+        routerViewModel.deleteTrackOrSegment.observeForever(deleteTrackOrSegObserver);
     }
 
     @Override
@@ -82,5 +100,6 @@ public class MultiTrackFragment extends BaseFragment {
         multiTrackViewModel.updateTrack.removeObserver(updateTrackObserver);
 
         routerViewModel.deliverMediaTrack.removeObserver(updateTrackObserver);
+        routerViewModel.deleteTrackOrSegment.removeObserver(deleteTrackOrSegObserver);
     }
 }

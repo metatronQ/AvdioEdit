@@ -24,7 +24,6 @@ class TimelineView : View, BaseView {
     private var spaceSize = 0f
     private val textVec = ArrayList<String>()
     private var mLastVisibleWidth = 0
-    private var mFrames = FramesType.FRAMES_UNKNOWN
 
     constructor(context: Context) : super(context) {
         onResolveAttribute(context, null, 0, 0)
@@ -88,11 +87,10 @@ class TimelineView : View, BaseView {
         return TypedValue.applyDimension(unit, value, r.displayMetrics)
     }
 
-    fun setDuration(us: Long, frames: Int) {
-        if (us > 0 && frames != FramesType.FRAMES_UNKNOWN) {
+    fun setDuration(us: Long) {
+        if (us > 0) {
             // 不需要加2s的扩展时间，因为加2s会在裁剪上出现时间问题
             this.durationInUS = us
-            this.mFrames = frames
             post {
                 textVec.clear()
                 measureText()

@@ -93,9 +93,9 @@ class TrackView : ViewGroup, BaseView {
         )
     }
 
-    fun setDuration(us: Long, frames: Int) {
+    fun setDuration(us: Long) {
         if (us > mTimeView.getDuration()) {
-            mTimeView.setDuration(us, frames)
+            mTimeView.setDuration(us)
             tMap.forEach {
                 it.value.duration = mTimeView.getDuration()
             }
@@ -127,17 +127,47 @@ class TrackView : ViewGroup, BaseView {
             return
         }
         // 重新计算maxDuration，所有轨道的duration应该统一
-        if (trackModel.duration > mTimeView.getDuration()) {
-            mTimeView.setDuration(trackModel.duration, trackModel.frames)
-            tMap.forEach {
-                it.value.duration = mTimeView.getDuration()
-            }
-        }
+        setDuration(trackModel.duration)
         trackModel.duration = mTimeView.getDuration()
         tMap[trackModel.id] = trackModel
         vMap[trackModel.id]?.updateAllSegment(trackModel)
         requestLayout()
 //        updateAudioTrack(track)
+    }
+
+    fun deleteTrackOrSeg(containerId: Int, segId: Int) {
+        if (segId == -1) {
+            tMap.remove(containerId)
+            removeView(vMap[containerId])
+            vMap.remove(containerId)
+        } else {
+            tMap[containerId]?.let {
+                it.childMedias.remove(segId)
+                vMap[containerId]?.updateAllSegment(it)
+            }
+        }
+        var maxSeqOut = 0L
+        vMap.forEach {
+            maxSeqOut = if (it.value.getMaxSeqOut() >= maxSeqOut) {
+                it.value.getMaxSeqOut()
+            } else {
+                maxSeqOut
+            }
+        }
+        // 只可能是小于或等于
+        if (maxSeqOut < mTimeView.getDuration()) {
+            mTimeView.setDuration(maxSeqOut)
+            tMap.forEach {
+                // 这里的更改会因为引用的原因直接反应到具体的track上？
+                it.value.duration = mTimeView.getDuration()
+            }
+        }
+        requestLayout()
+        // 删除后重置选中
+        multiViewModel.run {
+            cropModel.segmentId = -1
+            cropModel.containerId = -1
+        }
     }
 
     fun setScale(scale: ScaleRational) {

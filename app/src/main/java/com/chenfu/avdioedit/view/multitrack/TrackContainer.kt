@@ -89,7 +89,7 @@ class TrackContainer : HorizontalScrollView, BaseView {
         getChildView().setViewModel(multiTrackViewModel)
     }
 
-    public fun getChildView(): TrackView = mTrackView
+    fun getChildView(): TrackView = mTrackView
 
     override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
         super.onScrollChanged(l, t, oldl, oldt)
@@ -153,8 +153,8 @@ class TrackContainer : HorizontalScrollView, BaseView {
         )
     }
 
-    fun setDuration(us: Long, frames: Int) {
-        mTrackView.setDuration(us, frames)
+    fun setDuration(us: Long) {
+        mTrackView.setDuration(us)
     }
 
     fun addTrack(trackModel: MediaTrackModel) {
@@ -163,6 +163,10 @@ class TrackContainer : HorizontalScrollView, BaseView {
 
     fun updateTrack(trackModel: MediaTrackModel) {
         mTrackView.updateTrack(trackModel)
+    }
+
+    fun deleteTrackOrSeg(trackId: Int, segId: Int) {
+        mTrackView.deleteTrackOrSeg(trackId, segId)
     }
 
     fun setProgress(progress: Float) {
