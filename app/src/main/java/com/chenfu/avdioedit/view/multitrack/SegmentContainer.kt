@@ -15,8 +15,8 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.annotation.AttrRes
 import androidx.core.content.ContextCompat
-import androidx.core.view.size
 import com.chenfu.avdioedit.R
+import com.chenfu.avdioedit.model.data.ClipModel
 import com.chenfu.avdioedit.util.DisplayUtils
 import com.chenfu.avdioedit.model.data.MediaTrackModel
 import com.chenfu.avdioedit.model.data.MediaType
@@ -168,7 +168,7 @@ class SegmentContainer : ViewGroup, BaseView {
 
                     nowTrackModel.childMedias[childTrackModel.id] = childTrackModel
                     if (nowTrackModel.childMedias.size > 1) {
-                        Map2SortListThenUpdateMap(nowTrackModel)
+                        nowTrackModel.keepNotOverlap()
                     }
 
                     multiViewModel?.updateTrack?.value = nowTrackModel
@@ -183,53 +183,24 @@ class SegmentContainer : ViewGroup, BaseView {
 
         setOnClickListener {
             multiViewModel?.run {
+                // 当为拼合状态时，可以通过点击container来选中删除轨道，此操作对剪切无影响（因为视频片段未选中）
                 if (isSelected) {
                     isSelected = false
-                    cropModel.segmentId = -1
-                    cropModel.containerId = -1
+                    clipModel.segmentId = -1
+                    clipModel.containerId = -1
                 } else {
-                    updateSelectedStatusListener.update(cropModel.containerId, cropModel.segmentId)
+                    updateSelectedStatusListener.update(clipModel.containerId, clipModel.segmentId)
                     isSelected = true
                     // container更新selected状态会将子View一并更新
                     tvMap.forEach {
                         it.value.isSelected = false
                     }
-                    cropModel.segmentId = -1
-                    cropModel.containerId = mMediaTrackModel.id
+                    clipModel.segmentId = -1
+                    clipModel.containerId = mMediaTrackModel.id
                 }
             }
         }
         background = ContextCompat.getDrawable(context, R.drawable.track_select_bg)
-    }
-
-    /**
-     * 对segment根据seqIn从小到大排序
-     * 然后以冒泡的方式更新重叠的seg
-     */
-    private fun Map2SortListThenUpdateMap(nowTrackModel: MediaTrackModel) {
-        val array = ArrayList(nowTrackModel.childMedias.values)
-        val sortedArray = array.sortedBy {
-            it.seqIn
-        }
-        for (i in 0..sortedArray.size - 2) {
-            compareNowAndNextTrack(sortedArray[i], sortedArray[i+1])
-            nowTrackModel.childMedias[sortedArray[i].id] = sortedArray[i]
-        }
-        // 更新末尾
-        nowTrackModel.childMedias[sortedArray[sortedArray.size - 1].id] = sortedArray[sortedArray.size - 1]
-        nowTrackModel.duration = sortedArray[sortedArray.size - 1].seqOut
-    }
-
-    private fun compareNowAndNextTrack(nowTrackModel: MediaTrackModel, nextTrackModel: MediaTrackModel) {
-        if (nowTrackModel.seqOut <= nextTrackModel.seqIn) {
-            return
-        }
-        updateSegModelSeq(nextTrackModel, nowTrackModel.seqOut)
-    }
-
-    private fun updateSegModelSeq(segmentModel: MediaTrackModel, seqIn: Long) {
-        segmentModel.seqIn = seqIn
-        segmentModel.seqOut = segmentModel.seqIn + segmentModel.duration
     }
 
     override fun setViewModel(multiTrackViewModel: MultiTrackViewModel) {
@@ -262,15 +233,36 @@ class SegmentContainer : ViewGroup, BaseView {
         // 单击选中
         tv.setOnClickListener {
             multiViewModel?.let {
+                if (it.isMerge) {
+                    if (tv.isSelected) {
+                        tv.isSelected = false
+                        var temp: ClipModel? = null
+                        it.mergeQueue.forEach { clipModel ->
+                            if (clipModel.containerId == mMediaTrackModel.id && clipModel.segmentId == childTrackModel.id) {
+                                temp = clipModel
+                            }
+                        }
+                        it.mergeQueue.remove(temp)
+                    } else {
+                        if (it.mergeQueue.size == 2) {
+                            val oldseg = it.mergeQueue.poll()
+                            it.updateSelectedStatusListener.update(oldseg!!.containerId, oldseg.segmentId)
+                        }
+                        val clipModel = ClipModel(mMediaTrackModel.id, childTrackModel.id)
+                        it.mergeQueue.offer(clipModel)
+                        tv.isSelected = true
+                    }
+                    return@setOnClickListener
+                }
                 if (tv.isSelected) {
                     tv.isSelected = false
-                    it.cropModel.segmentId = -1
-                    it.cropModel.containerId = -1
+                    it.clipModel.segmentId = -1
+                    it.clipModel.containerId = -1
                 } else {
-                    it.updateSelectedStatusListener.update(it.cropModel.containerId, it.cropModel.segmentId)
+                    it.updateSelectedStatusListener.update(it.clipModel.containerId, it.clipModel.segmentId)
                     tv.isSelected = true
-                    it.cropModel.segmentId = childTrackModel.id
-                    it.cropModel.containerId = mMediaTrackModel.id
+                    it.clipModel.segmentId = childTrackModel.id
+                    it.clipModel.containerId = mMediaTrackModel.id
                 }
             }
         }
@@ -347,14 +339,11 @@ class SegmentContainer : ViewGroup, BaseView {
     private fun resetSelected() {
         tvMap.clear()
         multiViewModel?.run {
-            cropModel.segmentId = -1
-            cropModel.containerId = -1
+            clipModel.segmentId = -1
+            clipModel.containerId = -1
+            mergeQueue.clear()
         }
         removeAllViews()
-    }
-
-    fun updateChildView(childTrackModel: MediaTrackModel) {
-
     }
 
     private fun updateAudioTrack(trackModel: MediaTrackModel) {

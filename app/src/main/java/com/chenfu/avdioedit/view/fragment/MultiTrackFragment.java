@@ -39,10 +39,8 @@ public class MultiTrackFragment extends BaseFragment {
             } else {
                 mTrackContainer.updateTrack(mediaTrackModel);
             }
-            if (routerViewModel.cropData.getValue() != null) {
-                // 更新公用的TrackTreeMap
-                routerViewModel.cropData.getValue().setMediaTrackModelMap(mTrackContainer.getChildView().getTrackMap());
-            }
+            // 每次新增或更新轨道时，都可能导致时间轴的变化，时间轴变化会导致偏移量的变化，因此需要更新偏移量
+            multiTrackViewModel.clipModel.setCursorOffset(Math.round(mTrackContainer.getChildView().getTimeDuration() * mProgress));
         }
     };
 
@@ -50,6 +48,19 @@ public class MultiTrackFragment extends BaseFragment {
         mTrackContainer.deleteTrackOrSeg(pair.first, pair.second);
         if (pair.second == -1) {
             routerViewModel.trackCount--;
+        }
+    };
+
+    private final Observer<Boolean> mergeStatusObserver = new Observer<Boolean>() {
+        @Override
+        public void onChanged(Boolean aBoolean) {
+            multiTrackViewModel.isMerge = aBoolean;
+            if (aBoolean) {
+                multiTrackViewModel.clearCropSelected();
+            } else {
+                // 转为剪切状态
+                multiTrackViewModel.clearMergeSelected();
+            }
         }
     };
 
@@ -68,7 +79,7 @@ public class MultiTrackFragment extends BaseFragment {
                 mProgress = progress;
                 // 这里获取offset有问题，由于HorizontalScrollView计算了速度，最终scroll得到的位置可能不准确
                 // -> 更新放在onScrollChanged，而不是TouchEvent的move分支中
-                multiTrackViewModel.cropModel.setCursorOffset(Math.round(mTrackContainer.getChildView().getTimeDuration() * mProgress));
+                multiTrackViewModel.clipModel.setCursorOffset(Math.round(mTrackContainer.getChildView().getTimeDuration() * mProgress));
             }
 
             @Override
@@ -82,8 +93,10 @@ public class MultiTrackFragment extends BaseFragment {
             }
         });
         multiTrackViewModel = new ViewModelProvider(this).get(MultiTrackViewModel.class);
-        routerViewModel.cropData.setValue(multiTrackViewModel.cropModel);
+        routerViewModel.cropData.setValue(multiTrackViewModel.clipModel);
+        multiTrackViewModel.mergeQueue = routerViewModel.mergeTwoModelQueue;
         mTrackContainer.setViewModel(multiTrackViewModel);
+        routerViewModel.mediaTrackModelMap = mTrackContainer.getChildView().getTrackMap();
     }
 
     @Override
@@ -92,6 +105,7 @@ public class MultiTrackFragment extends BaseFragment {
 
         routerViewModel.deliverMediaTrack.observeForever(updateTrackObserver);
         routerViewModel.deleteTrackOrSegment.observeForever(deleteTrackOrSegObserver);
+        routerViewModel.isMergeStatus.observeForever(mergeStatusObserver);
     }
 
     @Override
@@ -101,5 +115,6 @@ public class MultiTrackFragment extends BaseFragment {
 
         routerViewModel.deliverMediaTrack.removeObserver(updateTrackObserver);
         routerViewModel.deleteTrackOrSegment.removeObserver(deleteTrackOrSegObserver);
+        routerViewModel.isMergeStatus.removeObserver(mergeStatusObserver);
     }
 }

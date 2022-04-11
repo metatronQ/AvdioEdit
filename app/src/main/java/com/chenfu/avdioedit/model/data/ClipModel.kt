@@ -2,14 +2,10 @@ package com.chenfu.avdioedit.model.data
 
 import java.util.*
 
-class CropModel {
-    var containerId = -1
-    var segmentId = -1
+class ClipModel(var containerId: Int = -1, var segmentId: Int = -1) {
     var cursorOffset = 0L
-    // 轨道总和Map
-    var mediaTrackModelMap: TreeMap<Int, MediaTrackModel> ?= null
 
-    fun getTrack(): MediaTrackModel? {
+    fun getTrack(mediaTrackModelMap: TreeMap<Int, MediaTrackModel>?): MediaTrackModel? {
         return if (containerId != -1) {
             mediaTrackModelMap?.get(containerId)?.clone()
         } else {
@@ -17,7 +13,7 @@ class CropModel {
         }
     }
 
-    fun getTrackSeg(): MediaTrackModel? {
+    fun getTrackSeg(mediaTrackModelMap: TreeMap<Int, MediaTrackModel>?): MediaTrackModel? {
         return if (containerId != -1 && segmentId != -1) {
             // 只要有一个为null就是null
             mediaTrackModelMap?.get(containerId)?.childMedias?.get(segmentId)?.clone()

@@ -74,6 +74,48 @@ class MediaTrackModel() : Parcelable, Comparable<MediaTrackModel> {
         }
         return clone
     }
+
+    fun updateDuration() {
+        if (this.childMedias.size == 0) {
+            this.duration = 0
+            return
+        }
+        val array = ArrayList(this.childMedias.values)
+        val sortedArray = array.sortedBy {
+            it.seqIn
+        }
+        this.duration = sortedArray[sortedArray.size - 1].seqOut
+    }
+
+    /**
+     * 对segment根据seqIn从小到大排序
+     * 然后以冒泡的方式更新重叠的seg
+     */
+    fun keepNotOverlap() {
+        val array = ArrayList(this.childMedias.values)
+        val sortedArray = array.sortedBy {
+            it.seqIn
+        }
+        for (i in 0..sortedArray.size - 2) {
+            compareNowAndNextTrack(sortedArray[i], sortedArray[i+1])
+            this.childMedias[sortedArray[i].id] = sortedArray[i]
+        }
+        // 更新末尾
+        this.childMedias[sortedArray[sortedArray.size - 1].id] = sortedArray[sortedArray.size - 1]
+        this.duration = sortedArray[sortedArray.size - 1].seqOut
+    }
+
+    private fun compareNowAndNextTrack(nowTrackModel: MediaTrackModel, nextTrackModel: MediaTrackModel) {
+        if (nowTrackModel.seqOut <= nextTrackModel.seqIn) {
+            return
+        }
+        updateSegModelSeq(nextTrackModel, nowTrackModel.seqOut)
+    }
+
+    private fun updateSegModelSeq(segmentModel: MediaTrackModel, seqIn: Long) {
+        segmentModel.seqIn = seqIn
+        segmentModel.seqOut = segmentModel.seqIn + segmentModel.duration
+    }
 }
 
 object MediaType {

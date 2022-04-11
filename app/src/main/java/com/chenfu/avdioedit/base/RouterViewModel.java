@@ -5,8 +5,11 @@ import android.util.Pair;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import com.chenfu.avdioedit.model.data.CropModel;
+import com.chenfu.avdioedit.model.data.ClipModel;
 import com.chenfu.avdioedit.model.data.MediaTrackModel;
+
+import java.util.TreeMap;
+import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * 用于Fragment与fragment、activity之间通信，不包含业务逻辑
@@ -29,10 +32,17 @@ public class RouterViewModel extends ViewModel {
 
     public MutableLiveData<MediaTrackModel> deliverMediaTrack = new MutableLiveData<>();
 
-    public MutableLiveData<CropModel> cropData = new MutableLiveData<>();
+    public MutableLiveData<ClipModel> cropData = new MutableLiveData<>();
 
     // <containerId, segId>
     public MutableLiveData<Pair<Integer, Integer>> deleteTrackOrSegment = new MutableLiveData<>();
+
+    public MutableLiveData<Boolean> isMergeStatus = new MutableLiveData<>();
+
+    public ArrayBlockingQueue<ClipModel> mergeTwoModelQueue = new ArrayBlockingQueue<>(2);
+
+    // 轨道总和map
+    public TreeMap<Integer, MediaTrackModel> mediaTrackModelMap;
 
     public int trackCount = 0;
 

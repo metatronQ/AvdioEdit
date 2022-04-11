@@ -162,15 +162,15 @@ class TrackView : ViewGroup, BaseView {
         if (maxSeqOut < mTimeView.getDuration()) {
             mTimeView.setDuration(maxSeqOut)
             tMap.forEach {
-                // 这里的更改会因为引用的原因直接反应到具体的track上？
+                // 这里的更改会因为引用的原因直接反应到具体的track上
                 it.value.duration = mTimeView.getDuration()
             }
         }
         requestLayout()
         // 删除后重置选中
         multiViewModel.run {
-            cropModel.segmentId = -1
-            cropModel.containerId = -1
+            clipModel.segmentId = -1
+            clipModel.containerId = -1
         }
     }
 
