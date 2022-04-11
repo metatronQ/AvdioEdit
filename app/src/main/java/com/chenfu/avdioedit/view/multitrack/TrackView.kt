@@ -94,6 +94,10 @@ class TrackView : ViewGroup, BaseView {
     }
 
     fun setDuration(us: Long) {
+        if (tMap.size == 0) {
+            mTimeView.setDuration(us)
+            return
+        }
         if (us > mTimeView.getDuration()) {
             mTimeView.setDuration(us)
             tMap.forEach {
