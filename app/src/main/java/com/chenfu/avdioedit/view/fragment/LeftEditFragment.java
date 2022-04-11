@@ -52,6 +52,7 @@ public class LeftEditFragment extends BaseFragment {
                 ToastUtil.INSTANCE.show(requireContext(), "轨道最多5条");
                 return;
             }
+            leftEditViewModel.separate(getContext(), routerViewModel.cropData.getValue(), routerViewModel.mediaTrackModelMap);
         });
         view.findViewById(R.id.delete_segment_tv).setOnClickListener(v -> {
             if (routerViewModel.cropData.getValue() != null

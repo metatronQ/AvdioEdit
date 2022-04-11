@@ -5,8 +5,10 @@ import android.content.Context;
 import androidx.lifecycle.ViewModel;
 
 import com.chenfu.avdioedit.Interface.LeftEditInterface;
+import com.chenfu.avdioedit.Interface.ResultCallback;
 import com.chenfu.avdioedit.model.data.ClipModel;
 import com.chenfu.avdioedit.model.data.FramesType;
+import com.chenfu.avdioedit.model.data.MediaType;
 import com.chenfu.avdioedit.util.FFmpegUtils;
 import com.chenfu.avdioedit.model.data.MediaTrackModel;
 import com.chenfu.avdioedit.util.IdUtils;
@@ -61,6 +63,7 @@ public class LeftEditImpl implements LeftEditInterface {
             return;
         }
 
+        // FIXME 音频貌似没有帧数
         if (trackSeg.getFrames() == FramesType.FRAMES_UNKNOWN) {
             ToastUtil.INSTANCE.show(context, "无效帧数");
             return;
@@ -127,7 +130,7 @@ public class LeftEditImpl implements LeftEditInterface {
                 "-ss" + "  " + format0 + "  " + "-t" + "  " + formatOffset + "  " + "-c  copy", outPath1,
                 "-ss" + "  " + formatOffset + "  " + "-t" + "  " + formatOff2Dura + "  " + "-c  copy", outPath2
         );
-        start(context, cmdString, new String[]{"裁剪成功", "裁剪超时"}, () -> leftEditViewModel.clipResultLiveData.setValue(track));
+        start(context, cmdString, new String[]{"裁剪成功", "裁剪失败", "裁剪超时"}, () -> leftEditViewModel.clipResultLiveData.setValue(track));
     }
 
     @Override
@@ -181,7 +184,7 @@ public class LeftEditImpl implements LeftEditInterface {
                 "-i", readFilePath,
                 "-c  copy", outPath
         );
-        start(context, cmdString, new String[]{"拼合成功", "拼合超时"}, () -> {
+        start(context, cmdString, new String[]{"拼合成功", "拼合失败", "拼合超时"}, () -> {
             if (trackModel1.getId() != trackModel2.getId()) {
                 leftEditViewModel.clipResultLiveData.setValue(trackModel2);
             }
@@ -189,17 +192,77 @@ public class LeftEditImpl implements LeftEditInterface {
         });
     }
 
+    @Override
+    public void separate(Context context, ClipModel clipModel, TreeMap<Integer, MediaTrackModel> map) {
+        MediaTrackModel trackModel = clipModel.getTrack(map);
+        MediaTrackModel segModel = clipModel.getTrackSeg(map);
+
+        if (trackModel == null || segModel == null) {
+            return;
+        }
+        String srcPath = segModel.getPath();
+        String[] temp = srcPath.split("\\.");
+        String outVideo = temp[0] + "-v." + temp[1];
+        segModel.setType(MediaType.TYPE_VIDEO);
+        segModel.setPath(outVideo);
+        trackModel.getChildMedias().put(segModel.getId(), segModel);
+
+        String outAudio = temp[0] + "-a." + "m4a";
+        MediaTrackModel audioSeg = segModel.clone();
+        audioSeg.setId(IdUtils.INSTANCE.getNewestSegmentId());
+        audioSeg.setPath(outAudio);
+        audioSeg.setType(MediaType.TYPE_AUDIO);
+        MediaTrackModel audioTrack = new MediaTrackModel();
+        audioTrack.setId(-1);
+        audioTrack.setSeqIn(0L);
+        audioTrack.setSeqOut(audioSeg.getSeqOut());
+        audioTrack.setDuration(audioTrack.getSeqOut() - audioTrack.getSeqIn());
+        audioTrack.getChildMedias().put(audioSeg.getId(), audioSeg);
+
+        String cmdString = spliceString(
+                "-y",
+                "-i", srcPath,
+                "-vn  -acodec  copy", outAudio,
+                "-an  -vcodec  copy", outVideo
+        );
+
+        // 若该seg只有音频流或视频流，那么命令将会失败
+        // FIXME 分离失败仍然可能输出0字节文件，因此可能还是需要在start之前判断一下，这里使用输出新的文件名文件代替
+        start(context, cmdString, new String[]{"分离成功", "分离失败，请检查选中seg是否是多路流", "分离超时"}, () -> {
+            // 音视频流原地变成视频流
+            leftEditViewModel.clipResultLiveData.setValue(trackModel);
+            // 新增音频流轨道
+            leftEditViewModel.clipResultLiveData.setValue(audioTrack);
+        });
+    }
+
     public void start(Context context, String cmd, String[] toastStrings, Callback callback) {
         AtomicBoolean isOut = new AtomicBoolean(false);
-        FFmpegUtils.INSTANCE.generateCmd(cmd, () -> isOut.set(true)).start(context);
+        AtomicBoolean isFailed = new AtomicBoolean(false);
+        FFmpegUtils.INSTANCE.generateCmd(cmd, new ResultCallback() {
+            @Override
+            public void onSucceed() {
+                isOut.set(true);
+            }
+
+            @Override
+            public void onFailed() {
+                isFailed.set(true);
+            }
+        }).start(context);
         if (timer != null && !timer.isDisposed()) timer.dispose();
         timer = Observable.interval(1, TimeUnit.SECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(aLong -> {
                     if (aLong > 10) {
-                        ToastUtil.INSTANCE.show(context, toastStrings[1]);
+                        ToastUtil.INSTANCE.show(context, toastStrings[2]);
                         FFmpegUtils.INSTANCE.killRunningProcesses();
                         timer.dispose();
+                    }
+                    if (isFailed.get()) {
+                        ToastUtil.INSTANCE.show(context, toastStrings[1]);
+                        timer.dispose();
+                        return;
                     }
                     if (isOut.get()) {
                         ToastUtil.INSTANCE.show(context, toastStrings[0]);

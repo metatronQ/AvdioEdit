@@ -38,4 +38,8 @@ public class LeftEditViewModel extends BaseViewModel<LeftEditImpl> {
     public void merge(Context context, ClipModel firstClip, ClipModel secondClip, TreeMap<Integer, MediaTrackModel> map) {
         impl.merge(context, firstClip, secondClip, map);
     }
+
+    public void separate(Context context, ClipModel clipModel, TreeMap<Integer, MediaTrackModel> map) {
+        impl.separate(context, clipModel, map);
+    }
 }

@@ -44,6 +44,7 @@ object FFmpegUtils {
 
                 override fun onFailure(message: String) {
                     LogUtil.packageName(context).e("FAILED with output : $message")
+                    callback.onFailed()
                 }
 
                 override fun onProgress(message: String) {

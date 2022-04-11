@@ -14,4 +14,6 @@ public interface LeftEditInterface extends Impl {
     void crop(Context context, ClipModel clipModel, TreeMap<Integer, MediaTrackModel> map);
 
     void merge(Context context, ClipModel firstClip, ClipModel secondClip, TreeMap<Integer, MediaTrackModel> map);
+
+    void separate(Context context, ClipModel clipModel, TreeMap<Integer, MediaTrackModel> map);
 }
