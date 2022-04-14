@@ -148,6 +148,8 @@ public class LeftEditImpl implements LeftEditInterface {
             return;
         }
 
+        // FIXME 判断不同分辨率时也不能进行拼接，拼接结果可能不对，不同分辨率使用画中画作为最终输出
+
         String[] src = segModel1.getPath().split("/");
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < src.length - 1; i++) {

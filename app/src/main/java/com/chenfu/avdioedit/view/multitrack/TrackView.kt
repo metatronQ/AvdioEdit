@@ -174,6 +174,20 @@ class TrackView : ViewGroup, BaseView {
         }
     }
 
+    fun getViewId(trackId: Int): Int {
+        // surface共有5个，最后面的展示在最上层，0为黑色打底View
+        // 5为最上层view
+        var realViewId = 5
+        // 0 是时间轴，childCount最多6个，最少1个
+        for (viewId in 1..childCount) {
+            val segmentContainer = getChildAt(viewId) as SegmentContainer
+            if (segmentContainer.getContainerId() == trackId) {
+                return 5 - (viewId - 1)
+            }
+        }
+        return -1
+    }
+
     fun setScale(scale: ScaleRational) {
         this.scale.num = scale.num
         this.scale.den = scale.den
@@ -225,6 +239,7 @@ class TrackView : ViewGroup, BaseView {
         mTimeView.layout(l, height, l + w, height + h)
         height += h
 
+        // TODO: 默认按key的添加顺序迭代
         vMap.forEach {
             val track = tMap[it.key]
             val view = it.value

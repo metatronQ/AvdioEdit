@@ -20,6 +20,7 @@ import com.chenfu.avdioedit.model.data.ClipModel
 import com.chenfu.avdioedit.util.DisplayUtils
 import com.chenfu.avdioedit.model.data.MediaTrackModel
 import com.chenfu.avdioedit.model.data.MediaType
+import com.chenfu.avdioedit.model.impl.PlayerImpl
 import com.chenfu.avdioedit.util.IdUtils
 import com.chenfu.avdioedit.viewmodel.MultiTrackViewModel
 import com.example.ndk_source.util.LogUtil
@@ -42,6 +43,8 @@ class SegmentContainer : ViewGroup, BaseView {
     private var startDragX = 0f
     private var startDragY = 0f
     private var initialObj: Any?= null
+
+    private lateinit var playerImpl: PlayerImpl
 
     constructor(context: Context, mediaTrackModel: MediaTrackModel): super(context) {
         this.mMediaTrackModel = mediaTrackModel
@@ -163,7 +166,8 @@ class SegmentContainer : ViewGroup, BaseView {
                         containerTrackModel.childMedias.remove(childTrackModel.id)
                         multiViewModel?.updateTrack?.value = containerTrackModel
 
-                        childTrackModel.id = IdUtils.getNewestSegmentId()
+                        // FIXME 由于id是全局唯一的，因此即使是跨track拖曳也不需要更新ID
+//                        childTrackModel.id = IdUtils.getNewestSegmentId()
                     }
 
                     nowTrackModel.childMedias[childTrackModel.id] = childTrackModel
@@ -330,6 +334,8 @@ class SegmentContainer : ViewGroup, BaseView {
         }
         return sortedArray[0].seqOut
     }
+
+    fun getContainerId() = mMediaTrackModel.id
 
     fun clearLastSelectedStatus(segmentId: Int) {
         isSelected = false

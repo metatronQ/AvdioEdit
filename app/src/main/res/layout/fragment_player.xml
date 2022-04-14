@@ -5,7 +5,23 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <RelativeLayout
+    <!--    <RelativeLayout-->
+    <!--        android:id="@+id/surface_container"-->
+    <!--        android:layout_width="match_parent"-->
+    <!--        android:layout_height="0dp"-->
+    <!--        app:layout_constraintBottom_toTopOf="@id/video_controller"-->
+    <!--        app:layout_constraintStart_toStartOf="parent"-->
+    <!--        app:layout_constraintTop_toTopOf="parent">-->
+
+    <!--        <SurfaceView-->
+    <!--            android:id="@+id/surface_view"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="wrap_content"-->
+    <!--            android:layout_centerInParent="true" />-->
+
+    <!--    </RelativeLayout>-->
+
+    <FrameLayout
         android:id="@+id/surface_container"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -13,13 +29,63 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <SurfaceView
-            android:id="@+id/surface_view"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true" />
+        <!--        0-->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/black"
+            android:layout_gravity="center"/>
 
-    </RelativeLayout>
+        <!--        1-->
+        <SurfaceView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:background="@color/transparent"
+            tools:background="@color/blue"
+            tools:layout_height="400dp"
+            tools:layout_width="700dp" />
+
+        <!--        2-->
+        <SurfaceView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/transparent"
+            android:layout_gravity="center"
+            tools:background="@color/blue"
+            tools:layout_height="300dp"
+            tools:layout_width="600dp"/>
+
+        <!--        3-->
+        <SurfaceView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/transparent"
+            android:layout_gravity="center"
+            tools:background="@color/blue"
+            tools:layout_height="200dp"
+            tools:layout_width="500dp"/>
+
+        <!--        4-->
+        <SurfaceView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/transparent"
+            android:layout_gravity="center"
+            tools:background="@color/blue"
+            tools:layout_height="100dp"
+            tools:layout_width="400dp"/>
+
+        <!--        5-->
+        <SurfaceView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/transparent"
+            android:layout_gravity="center"
+            tools:background="@color/blue"
+            tools:layout_height="50dp"
+            tools:layout_width="300dp"/>
+    </FrameLayout>
 
     <RelativeLayout
         android:id="@+id/video_controller"
@@ -51,16 +117,8 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_marginEnd="10dp"
-            android:layout_toStartOf="@id/back_10_seconds"
-            android:text="0000" />
-
-        <ImageButton
-            android:id="@+id/back_10_seconds"
-            style="@style/ImageButtonBackground"
-            android:layout_centerVertical="true"
             android:layout_toStartOf="@id/play_or_pause"
-            android:contentDescription="@string/back_10_seconds"
-            android:src="@drawable/round_replay_10_black_20" />
+            android:text="0000" />
 
         <ImageButton
             android:id="@+id/play_or_pause"
@@ -70,13 +128,21 @@
             android:contentDescription="@string/play_or_pause"
             android:src="@drawable/round_play_arrow_black_20" />
 
-        <ImageButton
-            android:id="@+id/forward_10_seconds"
-            style="@style/ImageButtonBackground"
-            android:layout_centerVertical="true"
-            android:layout_toEndOf="@id/play_or_pause"
-            android:contentDescription="@string/forward_10_seconds"
-            android:src="@drawable/round_forward_10_black_20" />
+        <!--        <ImageButton-->
+        <!--            android:id="@+id/back_10_seconds"-->
+        <!--            style="@style/ImageButtonBackground"-->
+        <!--            android:layout_centerVertical="true"-->
+        <!--            android:layout_toStartOf="@id/play_or_pause"-->
+        <!--            android:contentDescription="@string/back_10_seconds"-->
+        <!--            android:src="@drawable/round_replay_10_black_20" />-->
+
+        <!--        <ImageButton-->
+        <!--            android:id="@+id/forward_10_seconds"-->
+        <!--            style="@style/ImageButtonBackground"-->
+        <!--            android:layout_centerVertical="true"-->
+        <!--            android:layout_toEndOf="@id/play_or_pause"-->
+        <!--            android:contentDescription="@string/forward_10_seconds"-->
+        <!--            android:src="@drawable/round_forward_10_black_20" />-->
 
     </RelativeLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

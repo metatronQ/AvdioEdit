@@ -6,21 +6,23 @@ import com.chenfu.avdioedit.base.Impl;
 
 public interface PlayerInterface extends Impl {
 
-    void setDisplay(SurfaceHolder holder);
+//    void setDisplay(SurfaceHolder holder);
+//
+//    void setPath(String filePath);
+//
+//    void prepare();
+//
+//    void prepareAsync();
 
-    void setPath(String filePath);
+//    boolean isPlaying();
 
-    void prepare();
+    void play(long position);
 
-    void prepareAsync();
+    void pause();
 
-    boolean isPlaying();
-
-    void play();
-
-    void forward10();
-
-    void backward10();
+//    void forward10();
+//
+//    void backward10();
 
     void seekTo(int position);
 }

@@ -10,21 +10,20 @@ import com.chenfu.avdioedit.model.data.MediaTrackModel;
 
 public class PlayerViewModel extends BaseViewModel<PlayerImpl> {
 
-    // 播放进度回调
-    public MutableLiveData<ProgressModel> showPosition = new MutableLiveData<>();
+//    // 播放进度回调
+//    public MutableLiveData<ProgressModel> showPosition = new MutableLiveData<>();
 
-    // 准备完成并且重新计算屏幕
+    // TODO： 每个seg可能对应不同的VideoModel
     public MutableLiveData<VideoModel> recalculationScreen = new MutableLiveData<>();
 
-    // 通知多轨更新轨道信息
-    public MutableLiveData<MediaTrackModel> notifyMultiTrack = new MutableLiveData<>();
+    public ProgressModel progressModel = new ProgressModel();
 
-    // 视频播放结束
-    public MutableLiveData<Boolean> playOver = new MutableLiveData<>();
+//    // 通知多轨更新轨道信息
+//    public MutableLiveData<MediaTrackModel> notifyMultiTrack = new MutableLiveData<>();
 
     @Override
     protected PlayerImpl bindImpl() {
-        return new PlayerImpl(this);
+        return new PlayerImpl();
     }
 
     @Override
@@ -32,35 +31,35 @@ public class PlayerViewModel extends BaseViewModel<PlayerImpl> {
 
     }
 
-    public void setPath(String filePath) {
-        impl.setPath(filePath);
-    }
+//    public void setPath(String filePath) {
+//        impl.setPath(filePath);
+//    }
 
-    public void prepare() {
-        impl.prepare();
-    }
+//    public void prepare() {
+//        impl.prepare();
+//    }
+//
+//    public void prepareAsync() {
+//        impl.prepareAsync();
+//    }
 
-    public void prepareAsync() {
-        impl.prepareAsync();
-    }
+//    public boolean isPlaying() {
+//        return impl.isPlaying();
+//    }
+//
+//    public void play(long position) {
+//        impl.play(position);
+//    }
 
-    public boolean isPlaying() {
-        return impl.isPlaying();
-    }
-
-    public void play() {
-        impl.play();
-    }
-
-    public void forward10() {
-        impl.forward10();
-    }
-
-    public void backward10() {
-        impl.backward10();
-    }
-
-    public void seekTo(int position) {
-        impl.seekTo(position);
-    }
+//    public void forward10() {
+//        impl.forward10();
+//    }
+//
+//    public void backward10() {
+//        impl.backward10();
+//    }
+//
+//    public void seekTo(int position) {
+//        impl.seekTo(position);
+//    }
 }

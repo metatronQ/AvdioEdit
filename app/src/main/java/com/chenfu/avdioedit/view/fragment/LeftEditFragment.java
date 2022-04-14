@@ -76,7 +76,6 @@ public class LeftEditFragment extends BaseFragment {
             mediaTrackModel.setSeqIn(0);
             mediaTrackModel.setSeqOut(mediaTrackModel.getDuration());
             mediaTrackModel.setPath("");
-            // FIXME 此处应该通过底层获取视频帧数
             mediaTrackModel.setFrames(FramesType.FRAMES_UNKNOWN);
             routerViewModel.deliverMediaTrack.setValue(mediaTrackModel);
         });

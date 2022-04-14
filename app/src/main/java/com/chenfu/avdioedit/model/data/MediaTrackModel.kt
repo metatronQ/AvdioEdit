@@ -15,6 +15,9 @@ class MediaTrackModel() : Parcelable, Comparable<MediaTrackModel> {
     var path = ""
     var frames = FramesType.FRAMES_UNKNOWN
 
+    var vWidth = 0
+    var vHeight = 0
+
     constructor(parcel: Parcel) : this() {
         id = parcel.readInt()
         type = parcel.readInt()
@@ -23,6 +26,8 @@ class MediaTrackModel() : Parcelable, Comparable<MediaTrackModel> {
         duration = parcel.readLong()
         path = parcel.readString().toString()
         frames = parcel.readInt()
+        vWidth = parcel.readInt()
+        vHeight = parcel.readInt()
         childMedias = parcel.readHashMap(MediaTrackModel::class.java.classLoader) as HashMap<Int, MediaTrackModel>
     }
 
@@ -41,6 +46,8 @@ class MediaTrackModel() : Parcelable, Comparable<MediaTrackModel> {
         parcel.writeLong(duration)
         parcel.writeString(path)
         parcel.writeInt(frames)
+        parcel.writeInt(vWidth)
+        parcel.writeInt(vHeight)
         parcel.writeMap(childMedias)
     }
 
@@ -72,7 +79,17 @@ class MediaTrackModel() : Parcelable, Comparable<MediaTrackModel> {
         this.childMedias.forEach {
             clone.childMedias[it.key] = it.value.clone()
         }
+        clone.vWidth = this.vWidth
+        clone.vHeight = this.vHeight
         return clone
+    }
+
+    fun getSortedChildArray(): List<MediaTrackModel> {
+        val array = ArrayList(this.childMedias.values)
+        val sortedArray = array.sortedBy {
+            it.seqIn
+        }
+        return sortedArray
     }
 
     fun updateDuration() {
@@ -80,10 +97,7 @@ class MediaTrackModel() : Parcelable, Comparable<MediaTrackModel> {
             this.duration = 0
             return
         }
-        val array = ArrayList(this.childMedias.values)
-        val sortedArray = array.sortedBy {
-            it.seqIn
-        }
+        val sortedArray = getSortedChildArray()
         this.duration = sortedArray[sortedArray.size - 1].seqOut
     }
 
@@ -92,10 +106,7 @@ class MediaTrackModel() : Parcelable, Comparable<MediaTrackModel> {
      * 然后以冒泡的方式更新重叠的seg
      */
     fun keepNotOverlap() {
-        val array = ArrayList(this.childMedias.values)
-        val sortedArray = array.sortedBy {
-            it.seqIn
-        }
+        val sortedArray = getSortedChildArray()
         for (i in 0..sortedArray.size - 2) {
             compareNowAndNextTrack(sortedArray[i], sortedArray[i+1])
             this.childMedias[sortedArray[i].id] = sortedArray[i]
@@ -122,12 +133,14 @@ object MediaType {
     const val TYPE_UNKNOWN = -1
     const val TYPE_VIDEO = 0
     const val TYPE_AUDIO = 1
-    const val TYPE_VIDEO_REF = 2
-    const val TYPE_AUDIO_REF = 3
+    const val TYPE_VIDEO_AUDIO = 2
+//    const val TYPE_VIDEO_REF = 2
+//    const val TYPE_AUDIO_REF = 3
 }
 
 object FramesType {
     const val FRAMES_UNKNOWN = -1
+    const val FRAMES_10 = 10
     const val FRAMES_24 = 24
     const val FRAMES_30 = 30
     const val FRAMES_60 = 60

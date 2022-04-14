@@ -7,9 +7,14 @@ import androidx.lifecycle.ViewModel;
 
 import com.chenfu.avdioedit.model.data.ClipModel;
 import com.chenfu.avdioedit.model.data.MediaTrackModel;
+import com.chenfu.avdioedit.model.data.ProgressModel;
+import com.chenfu.avdioedit.model.data.VideoModel;
 
 import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
+
+import io.reactivex.Observable;
+import io.reactivex.subjects.PublishSubject;
 
 /**
  * 用于Fragment与fragment、activity之间通信，不包含业务逻辑
@@ -30,6 +35,12 @@ public class RouterViewModel extends ViewModel {
 
     public MutableLiveData<String> deliverFilePath = new MutableLiveData<>();
 
+    public MutableLiveData<ProgressModel> deliverProgress = new MutableLiveData<>();
+
+    public MutableLiveData<Pair<Integer, MediaTrackModel>> deliverPairSurface2TrackPlayers = new MutableLiveData<>();
+
+    public MutableLiveData<Integer> deletePlayer = new MutableLiveData<>();
+
     public MutableLiveData<MediaTrackModel> deliverMediaTrack = new MutableLiveData<>();
 
     public MutableLiveData<ClipModel> cropData = new MutableLiveData<>();
@@ -49,4 +60,18 @@ public class RouterViewModel extends ViewModel {
     public boolean isTrackFull() {
         return trackCount >= 5;
     }
+
+    private final PublishSubject<Long> publishSubjectTime = PublishSubject.create();
+
+    public PublishSubject<Long> getTimeObserver() {
+        return publishSubjectTime;
+    }
+
+    public boolean isPlaying = false;
+
+    public MutableLiveData<Boolean> playOrPause = new MutableLiveData<>();
+
+    // 视频播放结束
+    public MutableLiveData<Boolean> playOver = new MutableLiveData<>();
+
 }

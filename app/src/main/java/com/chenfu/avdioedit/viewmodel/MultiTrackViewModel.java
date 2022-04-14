@@ -14,6 +14,8 @@ public class MultiTrackViewModel extends BaseViewModel<MultiTrackImpl> {
 
     public MutableLiveData<MediaTrackModel> updateTrack = new MutableLiveData<>();
 
+    public MutableLiveData<Long> playingScroll = new MutableLiveData<>();
+
     public final ClipModel clipModel = new ClipModel();
 
     public SegmentContainer.UpdateSelectedStatusListener updateSelectedStatusListener;
