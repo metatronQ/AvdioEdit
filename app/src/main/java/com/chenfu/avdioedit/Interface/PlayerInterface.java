@@ -20,9 +20,5 @@ public interface PlayerInterface extends Impl {
 
     void pause();
 
-//    void forward10();
-//
-//    void backward10();
-
-    void seekTo(int position);
+    void seekTo(long position);
 }

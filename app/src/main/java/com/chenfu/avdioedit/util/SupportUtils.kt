@@ -13,6 +13,7 @@ object SupportUtils {
     private val supportVideoFormat = arrayOf("mp4")
     private val supportAudioFormat = arrayOf("mp3", "m4a")
 
+    // TODO 注意路径中有.的url，这里建议使用正则匹配（.mp3）等
     fun supportFormat(format: String): Int {
         if (supportVideoFormat.contains(format)) {
             return 1

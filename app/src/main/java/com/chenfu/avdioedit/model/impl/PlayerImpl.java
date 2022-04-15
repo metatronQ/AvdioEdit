@@ -1,28 +1,31 @@
 package com.chenfu.avdioedit.model.impl;
 
-import android.graphics.PixelFormat;
+import android.graphics.SurfaceTexture;
 import android.media.MediaPlayer;
-import android.view.SurfaceHolder;
+import android.view.Surface;
+import android.view.TextureView;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.ViewModel;
 
 import com.chenfu.avdioedit.Interface.PlayerInterface;
-import com.chenfu.avdioedit.enums.VideoStatus;
 import com.chenfu.avdioedit.model.data.MediaType;
 import com.chenfu.avdioedit.model.data.ProgressModel;
 import com.chenfu.avdioedit.model.data.VideoModel;
 import com.chenfu.avdioedit.model.data.MediaTrackModel;
+import com.chenfu.avdioedit.util.RxUtils;
 import com.chenfu.avdioedit.viewmodel.PlayerViewModel;
 import com.example.ndk_source.util.LogUtil;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subjects.PublishSubject;
 
 /**
  * 提供播放器数据的实现类
@@ -32,128 +35,188 @@ import java.util.Map;
  * @Model
  */
 public class PlayerImpl implements PlayerInterface,
-        SurfaceHolder.Callback,
+        TextureView.SurfaceTextureListener,
         MediaPlayer.OnCompletionListener,
         MediaPlayer.OnErrorListener,
         MediaPlayer.OnInfoListener,
         MediaPlayer.OnSeekCompleteListener,
-        MediaPlayer.OnVideoSizeChangedListener {
-
-    private SurfaceHolder mHolder;
-
-    private boolean isCreated = false;
+        MediaPlayer.OnVideoSizeChangedListener, MediaPlayer.OnPreparedListener {
 
     /**
-     * TODO： 开始之前，即点击开始时判断一下，更新结束才真正开始
-     * 更新position，若cur在某个seg中偏移，则将cur作为该seg的seqIn，更新当前player的seek
-     * 不用删除前面的seg，因为不会到达前面seg的seqIn
+     * 每个seg观察者
      */
+    private CompositeDisposable compositeDisposable = new CompositeDisposable();
+
+    /**
+     * 本track的被观察者，即给seg发送信令的对象
+     */
+    private final PublishSubject<Long> childSegSubject = PublishSubject.create();
+
+    private Surface mSurface;
+
+    public int containerW = 0;
+    public int containerH = 0;
+
     public long currentPosition = 0L;
 
     private MediaTrackModel trackModel;
 
     private HashMap<Integer, MediaTrackModel> childsMap;
 
-    /**
-     * segId to mediaPlayer
-     */
-    private final HashMap<Integer, MediaPlayer> segId2PlayerMap = new HashMap<>();
-
     private MediaPlayer mediaPlayer;
 
-    private final HashMap<Integer, String> segId2Url = new HashMap<>();
-
-    private String lastUrl;
-
-    private final HashMap<Long, Integer> seqIn2SegId = new HashMap<>();
-
-    private final HashMap<Long, Integer> seqOut2SegId = new HashMap<>();
-
-    private PlayerViewModel playerViewModel;
-    private ProgressModel progressModel = new ProgressModel();
-    private VideoModel videoModel = new VideoModel();
     private int nowSegId = -1;
 
-    // region update map
-    public void updateChildModelList(MediaTrackModel mediaTrackModel, HashMap<Integer, MediaTrackModel> map) {
+    private boolean isPrepared = false;
+
+    public boolean isGesture = true;
+
+    public void updateChildModelList(TextureView textureView, MediaTrackModel mediaTrackModel, HashMap<Integer, MediaTrackModel> map) {
         this.trackModel = mediaTrackModel;
         this.childsMap = map;
-        // 用于非添加track时更新
-        initAndDeleteOldPlayers();
-    }
-
-    private void initAndDeleteOldPlayers() {
         initPlayer();
-        Iterator<Map.Entry<Integer, String>> it = segId2Url.entrySet().iterator();
-        while(it.hasNext()){
-            Map.Entry<Integer, String> entry = it.next();
-            // 删除在childsMap中不存在的seg对应的url
-            if(childsMap.get(entry.getKey()) == null) {
-                it.remove();//使用迭代器的remove()方法删除元素
-            }
+        if (childsMap.size() == 0) {
+            dispose();
+            release();
+            recalculationScreen(
+                    textureView,
+                    FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT,
+                    0);
+            return;
+        }
+        // 新增轨道、添加轨道、删除seg、剪切、拼合
+        initObservers(textureView);
+    }
+
+    private void initObservers(TextureView textureView) {
+        if (textureView == null) {
+            return;
+        }
+        dispose();
+        compositeDisposable = null;
+        compositeDisposable = new CompositeDisposable();
+        for (Map.Entry<Integer, MediaTrackModel> entry : childsMap.entrySet()) {
+            Disposable disposable = childSegSubject
+                    .filter(position -> {
+                        MediaTrackModel child = entry.getValue();
+                        if (isGesture) {
+                            // 滑动
+                            currentPosition = position;
+                            if (child.getSeqIn() < position && position < child.getSeqOut()) {
+                                nowSegId = child.getId();
+                                // 在seg范围内
+                                if (!isPrepared) {
+                                    mediaPlayer.reset();
+                                    if (child.getType() == MediaType.TYPE_VIDEO || child.getType() == MediaType.TYPE_VIDEO_AUDIO) {
+                                        mediaPlayer.setSurface(mSurface);
+                                    }
+                                    try {
+                                        mediaPlayer.setDataSource(child.getPath());
+                                        mediaPlayer.prepare();
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                    recalculationScreen(textureView, child.getVWidth(), child.getVHeight(), 1);
+                                }
+                                mediaPlayer.seekTo((int) (position - child.getSeqIn()));
+                                return false;
+                            }
+                            if (nowSegId == -1 || nowSegId != child.getId()) {
+                                // 不是当前seg
+                                return false;
+                            }
+                            // 是当前seg且不在当前seg范围内
+                            mediaPlayer.reset();
+                            isPrepared = false;
+                            nowSegId = -1;
+                            recalculationScreen(
+                                    textureView,
+                                    FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT,
+                                    0);
+                            return false;
+                        } else {
+                            // 播放：优先级seqIn > cur > seqOut
+                            if (child.getSeqIn() == position) {
+                                nowSegId = child.getId();
+                                // 即使cur == seqIn
+                                mediaPlayer.reset();
+                                if (child.getType() == MediaType.TYPE_VIDEO || child.getType() == MediaType.TYPE_VIDEO_AUDIO) {
+                                    mediaPlayer.setSurface(mSurface);
+                                }
+                                try {
+                                    mediaPlayer.setDataSource(child.getPath());
+                                    mediaPlayer.prepare();
+                                    mediaPlayer.seekTo((int) (position - child.getSeqIn()));
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                                recalculationScreen(textureView, child.getVWidth(), child.getVHeight(), 1);
+                                return true;
+                            }
+                            if (nowSegId == -1 || nowSegId != child.getId()) {
+                                return false;
+                            }
+                            if (currentPosition == position) {
+                                // 滑动已准备
+                                return true;
+                            }
+                            // 按播放的顺序，应该是先隐藏再显示
+                            if (child.getSeqOut() == position) {
+                                recalculationScreen(
+                                        textureView,
+                                        FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT,
+                                        0);
+                                return false;
+                            }
+                            return false;
+                        }
+                    })
+                    .observeOn(Schedulers.computation())
+                    .subscribe(position -> {
+                        mediaPlayer.start();
+                    });
+            compositeDisposable.add(disposable);
         }
     }
 
-    private void updateSeq2SegIdMap() {
-        seqIn2SegId.clear();
-        seqOut2SegId.clear();
-        segId2Url.clear();
-        for (Map.Entry<Integer, MediaTrackModel> entry : childsMap.entrySet()) {
-            seqIn2SegId.put(entry.getValue().getSeqIn(), entry.getValue().getId());
-            seqOut2SegId.put(entry.getValue().getSeqOut(), entry.getValue().getId());
-            segId2Url.put(entry.getValue().getId(), entry.getValue().getPath());
-        }
+    public PublishSubject<Long> getSubject() {
+        return childSegSubject;
     }
-    // endregion
 
     /**
-     * 按下开始之前调用
-     * 若cur在某个seg之间，则开始时从该seg开始
+     * 重新计算texture的长宽
+     *
+     * @param vWidth
+     * @param vHeight
      */
-    public void updateTimeFirst() {
-        // 更新seqIn
-        updateSeq2SegIdMap();
-        if (currentPosition == 0) {
-            return;
-        }
-        MediaTrackModel seg = null;
-        List<MediaTrackModel> sortedChildList = trackModel.getSortedChildArray();
-        for (MediaTrackModel childModel : sortedChildList) {
-            // 删除处于cur前面的seqIn和seqOut
-            if (childModel.getSeqIn() < currentPosition) {
-                seqIn2SegId.remove(childModel.getSeqIn());
-            }
-            if (childModel.getSeqOut() < currentPosition) {
-                seqOut2SegId.remove(childModel.getSeqOut());
-            }
+    private void recalculationScreen(TextureView surfaceView, int vWidth, int vHeight, int alpha) {
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) surfaceView.getLayoutParams();
+        if (vWidth > containerW || vHeight > containerH) {
+            // 如果video的宽或者高超出了当前容器的大小，则要进行缩放
+//            float wRatio = (float) vWidth / (float) lw;
+            float hRatio = (float) vHeight / (float) containerH;
 
-            if (childModel.getSeqIn() < currentPosition && currentPosition < childModel.getSeqOut()) {
-                // 处于该seg范围内
-                seg = childModel;
-                break;
-            }
+//            float ratio = Math.max(wRatio, hRatio);
+            // 固定高，缩放宽
+            vHeight = containerH;
+            vWidth = (int) Math.ceil((float) vWidth / hRatio);
+
+            // 设置surfaceView的布局参数
+            lp.width = vWidth;
+            lp.height = vHeight;
+//            surfaceView.setLayoutParams(lp);
+        } else {
+            lp.width = vWidth;
+            lp.height = vHeight;
         }
-        if (seg == null) {
-            // cur处于空白或终点处
-            return;
-        }
-        seqIn2SegId.put(currentPosition, seg.getId());
+        surfaceView.post(() -> {
+            surfaceView.setLayoutParams(lp);
+            surfaceView.setAlpha(alpha);
+        });
     }
 
-    public Integer getSegId(long position) {
-        return seqIn2SegId.get(position);
-    }
-
-    public Integer getSegOut(long position) {
-        return seqOut2SegId.get(position);
-    }
-
-    public VideoModel getWH(int segId) {
-        MediaTrackModel child = childsMap.get(segId);
-        VideoModel videoModel = new VideoModel();
-        videoModel.vWidth = child == null ? FrameLayout.LayoutParams.MATCH_PARENT: child.getVWidth();
-        videoModel.vHeight = child == null ? FrameLayout.LayoutParams.MATCH_PARENT: child.getVHeight();
-        return videoModel;
+    public int getChildSegSize() {
+        return childsMap.size();
     }
 
     private void initPlayer() {
@@ -164,115 +227,59 @@ public class PlayerImpl implements PlayerInterface,
             mediaPlayer.setOnInfoListener(this);
             mediaPlayer.setOnSeekCompleteListener(this);
             mediaPlayer.setOnVideoSizeChangedListener(this);
+            mediaPlayer.setOnPreparedListener(this);
         }
+    }
+
+    @Override
+    public void onPrepared(MediaPlayer mp) {
+        isPrepared = true;
+    }
+
+    @Override
+    public void setViewModel(ViewModel viewModel) {
     }
 
     /**
-     * 需要在surfaceview创建之前调用
+     * @param position updateTimeWhenPlayFirst
      */
     @Override
-    public void setViewModel(ViewModel viewModel) {
-        playerViewModel = (PlayerViewModel) viewModel;
-    }
-
-    @Override
     public void play(long position) {
-        Integer segId = seqIn2SegId.get(position);
-        if (segId == null) {
-            LogUtil.INSTANCE.manualPkgName("com.chenfu.avdioedit.model.impl.PlayerImpl").e("找不到seg");
-            return;
-        }
-        if (mediaPlayer == null) {
-            LogUtil.INSTANCE.manualPkgName("com.chenfu.avdioedit.model.impl").e("请先调用initPlayer初始化player");
-            return;
-        }
-
-        MediaTrackModel child = childsMap.get(segId);
-        if (child == null) {
-            return;
-        }
-        mediaPlayer.reset();
-        mediaPlayer.setOnPreparedListener(mp -> {
-            // TODO: 需要保证mediaPlay从当前cur开始
-            if (position == currentPosition) {
-                int offset = (int) (currentPosition - child.getSeqIn());
-                mp.seekTo(offset);
-            }
-            mp.start();
-            lastUrl = segId2Url.get(segId);
-        });
-        if (child.getType() == MediaType.TYPE_VIDEO || child.getType() == MediaType.TYPE_VIDEO_AUDIO) {
-            mediaPlayer.setDisplay(mHolder);
-        }
-        try {
-            mediaPlayer.setDataSource(segId2Url.get(segId));
-            mediaPlayer.prepareAsync();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-//        lastPlayer = mediaPlayer;
-//        if (videoStatus == VideoStatus.PREPARE) {
-//            return;
-//        }
-//        if (mediaPlayer.isPlaying()) {
-//            videoStatus = VideoStatus.PAUSE;
-//            mediaPlayer.pause();
-//        } else {
-//            initTimer();
-//            // 此处应该只有三种可能的状态：PrepareFinish、Pause、Stop
-//            if (videoStatus.getType() >= VideoStatus.PREPARE_FINISH.getType()) {
-//                videoStatus = VideoStatus.START;
-//            }
-//            mediaPlayer.start();
-//        }
     }
 
+    /**
+     * 由于每次开始前会重新排列并发送信令，因此暂停状态不可控，但是seek会更新mediaplay状态
+     */
     @Override
     public void pause() {
         if (mediaPlayer == null) {
-            LogUtil.INSTANCE.manualPkgName("com.chenfu.avdioedit.model.impl.PlayerImpl").e("无lastPlayer");
+            LogUtil.INSTANCE.e("无lastPlayer");
             return;
         }
         mediaPlayer.pause();
+        // 暂停即停止，再次start需reset
+        isPrepared = false;
     }
 
+    // 非播放状态下
     @Override
-    public void seekTo(int position) {
-        this.currentPosition = position;
+    public void seekTo(long position) {
     }
 
     /**
-     * 第一次创建surface时调用
-     *
-     * @param holder
+     * 释放资源的时机：
+     * view销毁时-》onDestroy()
+     * track删除时
      */
-    @Override
-    public void surfaceCreated(@NonNull SurfaceHolder holder) {
-        // 设置输出surface
-        // 需要保证surface在设置之前被创建
-        this.mHolder = holder;
-        initAndDeleteOldPlayers();
-        isCreated = true;
-    }
-
-    @Override
-    public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
-
-    }
-
-    // TODO: 申请文件跳到saf时会回调此方法
-    @Override
-    public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
-//        releaseAll();
-        isCreated = false;
-    }
-
-    /**
-     * 释放资源的时机：view销毁时-》onDestroy()
-     */
-    public void releaseAll() {
+    public void release() {
+        // 本track销毁则发送完成信令
+        childSegSubject.onComplete();
         mediaPlayer.release();
+        if (mSurface != null) mSurface.release();
+    }
+
+    public void dispose() {
+        RxUtils.dispose(compositeDisposable);
     }
 
     @Override
@@ -303,5 +310,34 @@ public class PlayerImpl implements PlayerInterface,
     public void onVideoSizeChanged(MediaPlayer mp, int width, int height) {
         // log
         LogUtil.INSTANCE.v("视频宽：" + width + "，视频高：" + height);
+    }
+
+    @Override
+    public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
+        // 此方法不回调，怀疑是实现回调的对象不是activity
+//        this.mSurface = new Surface(surface);
+//        initAndDeleteOldPlayers();
+//        isCreated = true;
+    }
+
+    @Override
+    public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surface, int width, int height) {
+
+    }
+
+    @Override
+    public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surface) {
+        mSurface = null;
+        mediaPlayer.stop();
+        mSurface.release();
+        return true;
+    }
+
+    @Override
+    public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
+        if (mSurface == null || !mSurface.isValid()) {
+            LogUtil.INSTANCE.d("》》》");
+            this.mSurface = new Surface(surface);
+        }
     }
 }

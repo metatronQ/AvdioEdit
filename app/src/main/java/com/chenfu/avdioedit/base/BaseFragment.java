@@ -27,6 +27,8 @@ abstract public class BaseFragment extends Fragment {
 
     protected void removeObserversAndDispose() {
         compositeDisposable.dispose();
+        // fragment销毁则发送完成信令
+        routerViewModel.getTimeObserver().onComplete();
     }
 
     protected void init(View view) {

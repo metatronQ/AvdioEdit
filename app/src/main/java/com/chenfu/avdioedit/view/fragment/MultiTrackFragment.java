@@ -18,6 +18,7 @@ import com.chenfu.avdioedit.util.SupportUtils;
 import com.chenfu.avdioedit.view.multitrack.TrackContainer;
 import com.chenfu.avdioedit.model.data.MediaTrackModel;
 import com.chenfu.avdioedit.viewmodel.MultiTrackViewModel;
+import com.example.ndk_source.util.LogUtil;
 import com.example.ndk_source.util.ToastUtil;
 
 import java.util.concurrent.TimeUnit;
@@ -237,7 +238,7 @@ public class MultiTrackFragment extends BaseFragment {
         mTrackContainer.setOnSeekBarChangeListener(new TrackContainer.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(float progress, boolean fromUser) {
-                //                LogUtil.INSTANCE.packageName(getContext()).v("" + progress);
+                LogUtil.INSTANCE.packageName(requireContext()).v("" + progress);
                 // 这里获取offset有问题，由于HorizontalScrollView计算了速度，最终scroll得到的位置可能不准确
                 // -> 更新放在onScrollChanged，而不是TouchEvent的move分支中
                 mProgress = progress;
@@ -255,6 +256,9 @@ public class MultiTrackFragment extends BaseFragment {
                 progressModel.duration = mTrackContainer.getChildView().getTimeDuration();
                 progressModel.position = realPosition;
                 routerViewModel.deliverProgress.setValue(progressModel);
+
+                // TODO：这里可能会因为发送过快而出现问题，因此下流可能需要背压策略（丢弃）
+                routerViewModel.getTimeObserver().onNext(realPosition);
             }
 
             @Override

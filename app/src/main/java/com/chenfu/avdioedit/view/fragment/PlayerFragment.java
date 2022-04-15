@@ -1,44 +1,34 @@
 package com.chenfu.avdioedit.view.fragment;
 
-import android.graphics.PixelFormat;
 import android.util.Pair;
-import android.view.Gravity;
-import android.view.SurfaceView;
+import android.view.TextureView;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.chenfu.avdioedit.R;
 import com.chenfu.avdioedit.base.BaseFragment;
 import com.chenfu.avdioedit.model.data.ProgressModel;
-import com.chenfu.avdioedit.model.data.VideoModel;
 import com.chenfu.avdioedit.model.data.MediaTrackModel;
 import com.chenfu.avdioedit.model.impl.PlayerImpl;
-import com.chenfu.avdioedit.util.RxUtils;
 import com.chenfu.avdioedit.viewmodel.PlayerViewModel;
 import com.example.ndk_source.util.ToastUtil;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
-import io.reactivex.Observable;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
 public class PlayerFragment extends BaseFragment {
 
     private View rootView;
-    private FrameLayout surfaceContainer;
+    private FrameLayout textureContainer;
     private ImageButton playOrPause;
     private TextView curPositionTv;
     private TextView durationPositionTv;
@@ -51,14 +41,14 @@ public class PlayerFragment extends BaseFragment {
     // 对应surface
     private Disposable d1, d2, d3, d4, d5;
 
-    private PlayerImpl player1, player2, player3, player4, player5;
-
     private final HashMap<Integer, PlayerImpl> viewId2Player = new HashMap<>();
 
-    // 五层，只需要看前四层的层级
-    private boolean[] playHierarchy = {false, false, false, false};
+    // 0 - 4 -> 1 - 5
+    // private boolean[] playHierarchy = {false, false, false, false, false};
 
     private int mDuration = 0;
+    private int containerW = 0;
+    private int containerH = 0;
 
     private final Observer<ProgressModel> progressModelObserver = new Observer<ProgressModel>() {
         @Override
@@ -69,12 +59,6 @@ public class PlayerFragment extends BaseFragment {
             mDuration = (int) progressModel.duration;
             durationPositionTv.setText(String.valueOf(progressModel.duration));
             curPositionTv.setText(String.valueOf(progressModel.position));
-            if (!routerViewModel.isPlaying) {
-                // 播放时不更新player
-                for (Map.Entry<Integer, PlayerImpl> entry : viewId2Player.entrySet()) {
-                    entry.getValue().seekTo((int) progressModel.position);
-                }
-            }
         }
     };
 
@@ -88,9 +72,6 @@ public class PlayerFragment extends BaseFragment {
             routerViewModel.isPlaying = false;
             curPositionTv.setText(String.valueOf(mDuration));
             playOrPause.setImageResource(R.drawable.round_play_arrow_black_20);
-            for (Map.Entry<Integer, PlayerImpl> entry : viewId2Player.entrySet()) {
-                entry.getValue().seekTo(mDuration);
-            }
         }
     };
 
@@ -101,7 +82,7 @@ public class PlayerFragment extends BaseFragment {
     private final Observer<Pair<Integer, MediaTrackModel>> updateTrackPlayers = integerMediaTrackModelPair -> {
         int viewId = integerMediaTrackModelPair.first;
         MediaTrackModel trackModel = integerMediaTrackModelPair.second;
-        initSurfaceViewsAndPlayers(viewId, trackModel);
+        initTextureViewsAndPlayers(viewId, trackModel);
     };
 
     /**
@@ -112,7 +93,8 @@ public class PlayerFragment extends BaseFragment {
         if (player == null) return;
         if (viewId == getBottomViewIdBySize()) {
             // 删除的是底层track
-            player.releaseAll();
+            player.dispose();
+            player.release();
             viewId2Player.remove(viewId);
 
             if (routerViewModel.trackCount == 0) {
@@ -124,7 +106,9 @@ public class PlayerFragment extends BaseFragment {
             }
             return;
         }
-        player.releaseAll();
+        // 删除轨道释放dispose
+        player.dispose();
+        player.release();
         for (int i = viewId; i > getBottomViewIdBySize(); i--) {
             viewId2Player.put(i, viewId2Player.get(i - 1));
         }
@@ -163,7 +147,11 @@ public class PlayerFragment extends BaseFragment {
     }
 
     private void initViews() {
-        surfaceContainer = rootView.findViewById(R.id.surface_container);
+        textureContainer = rootView.findViewById(R.id.surface_container);
+        textureContainer.post(() -> {
+            containerW = textureContainer.getWidth();
+            containerH = textureContainer.getHeight();
+        });
         curPositionTv = rootView.findViewById(R.id.current_position);
         durationPositionTv = rootView.findViewById(R.id.duration_position);
         playOrPause = rootView.findViewById(R.id.play_or_pause);
@@ -185,9 +173,9 @@ public class PlayerFragment extends BaseFragment {
                 routerViewModel.isPlaying = true;
                 playOrPause.setImageResource(R.drawable.round_pause_black_20);
                 // 准备
-                for (Map.Entry<Integer, PlayerImpl> entry : viewId2Player.entrySet()) {
-                    entry.getValue().updateTimeFirst();
-                }
+//                for (Map.Entry<Integer, PlayerImpl> entry : viewId2Player.entrySet()) {
+//                    entry.getValue().updateTimeBeforePlay();
+//                }
                 // 开始
                 routerViewModel.playOrPause.setValue(true);
             }
@@ -195,144 +183,73 @@ public class PlayerFragment extends BaseFragment {
         playOrPause.setImageResource(R.drawable.round_play_arrow_black_20);
     }
 
-    private void initSurfaceViewsAndPlayers(int viewId, MediaTrackModel trackModel) {
+    private void initTextureViewsAndPlayers(int viewId, MediaTrackModel trackModel) {
         PlayerImpl player = viewId2Player.get(viewId);
+        TextureView textureView = (TextureView) textureContainer.getChildAt(viewId);
         if (player == null) {
             player = new PlayerImpl();
-            SurfaceView surfaceView = (SurfaceView) surfaceContainer.getChildAt(viewId);
-            surfaceView.getHolder().addCallback(player);
+//            textureView.getHolder().addCallback(player);
+            textureView.setSurfaceTextureListener(player);
             viewId2Player.put(viewId, player);
+            player.containerW = containerW;
+            player.containerH = containerH;
         }
-        player.updateChildModelList(trackModel, trackModel.getChildMedias());
-    }
-
-    private void initSurfaceViewsAndPlayers() {
-//        surfaceView.setZOrderOnTop(false);
-//        surfaceView.getHolder().setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        SurfaceView surfaceView5 = (SurfaceView) surfaceContainer.getChildAt(5);
-        player5 = new PlayerImpl();
-        surfaceView5.getHolder().addCallback(player5);
-        viewId2Player.put(5, player5);
-
-        SurfaceView surfaceView4 = (SurfaceView) surfaceContainer.getChildAt(4);
-        player4 = new PlayerImpl();
-        surfaceView4.getHolder().addCallback(player4);
-        viewId2Player.put(4, player4);
-
-        SurfaceView surfaceView3 = (SurfaceView) surfaceContainer.getChildAt(3);
-        player3 = new PlayerImpl();
-        surfaceView3.getHolder().addCallback(player3);
-        viewId2Player.put(3, player3);
-
-        SurfaceView surfaceView2 = (SurfaceView) surfaceContainer.getChildAt(2);
-        player2 = new PlayerImpl();
-        surfaceView2.getHolder().addCallback(player2);
-        viewId2Player.put(2, player2);
-
-        SurfaceView surfaceView1 = (SurfaceView) surfaceContainer.getChildAt(1);
-        player1 = new PlayerImpl();
-        surfaceView1.getHolder().addCallback(player1);
-        viewId2Player.put(1, player1);
-    }
-
-    /**
-     * 重新计算surfaceview的长宽
-     *
-     * @param vWidth
-     * @param vHeight
-     */
-    private void recalculationScreen(SurfaceView surfaceView, int vWidth, int vHeight) {
-        int lw = surfaceContainer.getWidth();
-        int lh = surfaceContainer.getHeight();
-
-        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) surfaceView.getLayoutParams();
-        if (vWidth > lw || vHeight > lh) {
-            // 如果video的宽或者高超出了当前容器的大小，则要进行缩放
-            float wRatio = (float) vWidth / (float) lw;
-            float hRatio = (float) vHeight / (float) lh;
-
-            // 选择大的一个进行缩放
-            float ratio = Math.max(wRatio, hRatio);
-            vWidth = (int) Math.ceil((float) vWidth / ratio);
-            vHeight = (int) Math.ceil((float) vHeight / ratio);
-
-            // 设置surfaceView的布局参数
-            lp.width = vWidth;
-            lp.height = vHeight;
-//            surfaceView.setLayoutParams(lp);
-        } else {
-            lp.width = vWidth;
-            lp.height = vHeight;
-        }
-        surfaceView.post(() -> surfaceView.setLayoutParams(lp));
+        player.updateChildModelList(textureView, trackModel, trackModel.getChildMedias());
     }
 
     private void initDisposables() {
         compositeDisposable = new CompositeDisposable();
         d5 = routerViewModel.getTimeObserver()
-                // 判断是否到达seqIn或seqOut位置
-                .filter(aLong -> filterPositionAndUpdateOverlay(5, aLong))
+                .filter(aLong -> filterContainer(5, aLong))
                 .observeOn(Schedulers.computation())
                 .subscribe(aLong -> {
-                    consumeEvent(viewId2Player.get(5), aLong);
+                    viewId2Player.get(5).getSubject().onNext(aLong);
                 });
         d4 = routerViewModel.getTimeObserver()
-                .filter(aLong -> filterPositionAndUpdateOverlay(4, aLong))
+                .filter(aLong -> filterContainer(4, aLong))
                 .observeOn(Schedulers.computation())
                 .subscribe(aLong -> {
-                    consumeEvent(viewId2Player.get(4), aLong);
+                    viewId2Player.get(4).getSubject().onNext(aLong);
                 });
         d3 = routerViewModel.getTimeObserver()
-                .filter(aLong -> filterPositionAndUpdateOverlay(3, aLong))
+                .filter(aLong -> filterContainer(3, aLong))
                 .observeOn(Schedulers.computation())
                 .subscribe(aLong -> {
-                    consumeEvent(viewId2Player.get(3), aLong);
+                    viewId2Player.get(3).getSubject().onNext(aLong);
                 });
         d2 = routerViewModel.getTimeObserver()
-                .filter(aLong -> filterPositionAndUpdateOverlay(2, aLong))
+                .filter(aLong -> filterContainer(2, aLong))
                 .observeOn(Schedulers.computation())
                 .subscribe(aLong -> {
-                    consumeEvent(viewId2Player.get(2), aLong);
+                    viewId2Player.get(2).getSubject().onNext(aLong);
                 });
         d1 = routerViewModel.getTimeObserver()
-                .filter(aLong -> filterPositionAndUpdateOverlay(1, aLong))
+                .filter(aLong -> filterContainer(1, aLong))
                 .observeOn(Schedulers.computation())
                 .subscribe(aLong -> {
-                    consumeEvent(viewId2Player.get(1), aLong);
+                    viewId2Player.get(1).getSubject().onNext(aLong);
                 });
         compositeDisposable.addAll(d5, d4, d3, d2, d1);
     }
 
-    private boolean filterPositionAndUpdateOverlay(int viewId, long position) {
+    public boolean filterContainer(int viewId, long position) {
         PlayerImpl temp = viewId2Player.get(viewId);
         if (temp != null) {
+            if (temp.getChildSegSize() == 0) {
+                // size为0则不发送信令
+                return false;
+            }
             if (position == -1) {
                 // -1为暂停
                 temp.pause();
                 return false;
             }
-            SurfaceView surfaceView = (SurfaceView) surfaceContainer.getChildAt(viewId);
-            if (temp.getSegId(position) != null) {
-//                VideoModel videoModel = temp.getWH(temp.getSegId(position));
-//                recalculationScreen(surfaceView, videoModel.vWidth, videoModel.vHeight);
-                surfaceView.setZOrderMediaOverlay(true);
-                surfaceView.getHolder().setFormat(PixelFormat.OPAQUE);
-                return true;
-            }
-            if (temp.getSegOut(position) != null) {
-//                recalculationScreen(surfaceView, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
-                surfaceView.setZOrderMediaOverlay(false);
-                surfaceView.getHolder().setFormat(PixelFormat.TRANSPARENT);
-                return false;
-            }
+            temp.isGesture = !routerViewModel.isPlaying;
+            return true;
         }
         return false;
     }
 
-    private void consumeEvent(PlayerImpl player, long position) {
-        if (player == null) return;
-        player.play(position);
-    }
     @Override
     protected void observeActions() {
         initDisposables();
@@ -363,7 +280,8 @@ public class PlayerFragment extends BaseFragment {
     public void onDestroy() {
         super.onDestroy();
         for (Map.Entry<Integer, PlayerImpl> entry : viewId2Player.entrySet()) {
-            entry.getValue().releaseAll();
+            entry.getValue().dispose();
+            entry.getValue().release();
         }
         viewId2Player.clear();
     }
